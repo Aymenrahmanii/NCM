@@ -50,8 +50,8 @@ def main() -> None:
     print(f"{'tokens':>7} {'sequential ms':>14} {'parallel ms':>12} {'ratio':>8}")
     with torch.no_grad():
         for tokens in TOKENS_LIST:
-            seq = time_it(lambda: sequential(layer, tokens)) * 1000
-            par = time_it(lambda: parallel(layer, tokens)) * 1000
+            seq = time_it(lambda t=tokens: sequential(layer, t)) * 1000
+            par = time_it(lambda t=tokens: parallel(layer, t)) * 1000
             print(f"{tokens:>7} {seq:>14.3f} {par:>12.3f} {seq / par:>7.1f}x")
 
 
