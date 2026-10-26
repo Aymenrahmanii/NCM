@@ -12,6 +12,28 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "torch",
+    "tokenizers",
+    "huggingface_hub",
+    "pyarrow",
+    "matplotlib",
+    "transformers",
+    # official NCM code (third_party/ncm) and metrics
+    "omegaconf",
+    "hydra-core",
+    "regex",
+    "rouge_score",
+    "sacrebleu",
+    "sentencepiece",  # tokenizer of the opus-mt (Marian) baseline
+    # phase 5: RAG and agents
+    "sentence-transformers",
+    "faiss-cpu",
+    "requests",
+    # phase 6: service
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic-settings",
+    "prometheus-client",
+    "httpx",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +45,17 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+extend-exclude = ["third_party", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP"]
+ignore = [
+    "E731",  # small lambdas are fine in scripts
+    "B905",  # zip() without strict=: lengths are equal by construction here
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/ncm_lab/api/main.py" = ["B904"]  # HTTPException raised from except on purpose
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
