@@ -1,8 +1,10 @@
 # Give the space of deleted files inside WSL/Docker back to Windows.
 # WSL and Docker virtual disks (.vhdx) grow but never shrink on their own.
 #
-# Run in PowerShell **as Administrator**, with nothing important running in WSL:
-#   powershell -ExecutionPolicy Bypass -File \\wsl.localhost\Ubuntu-24.04\home\aymen\ncm-lab\scripts\compact_wsl_disks.ps1
+# Run in PowerShell **as Administrator**, with nothing important running in WSL.
+# Copy it to Windows first (the script shuts WSL down, so don't run it from \\wsl.localhost):
+#   copy \\wsl.localhost\Ubuntu-24.04\home\aymen\ncm-lab\scripts\compact_wsl_disks.ps1 $HOME\Desktop\
+#   powershell -ExecutionPolicy Bypass -File $HOME\Desktop\compact_wsl_disks.ps1
 # Works on Windows Home (uses diskpart, not Hyper-V's Optimize-VHD).
 
 $ErrorActionPreference = "Stop"
@@ -16,8 +18,10 @@ $disks = @()
 Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss | ForEach-Object {
     $p = Get-ItemProperty $_.PSPath
     if ($p.BasePath) {
-        $f = Join-Path $p.BasePath "ext4.vhdx"
-        if (Test-Path $f) { $disks += $f }
+        # BasePath can look like \\?\C:\Users\...; Join-Path cannot parse that prefix
+        $base = $p.BasePath -replace '^\\\\\?\\', ''
+        $f = [System.IO.Path]::Combine($base, "ext4.vhdx")
+        if (Test-Path -LiteralPath $f) { $disks += $f }
     }
 }
 $docker = Join-Path $env:LOCALAPPDATA "Docker\wsl\disk\docker_data.vhdx"
