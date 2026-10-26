@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Secrets
+.env
+
+# Large files: recreated by download scripts
+artifacts/
+data/
+third_party/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

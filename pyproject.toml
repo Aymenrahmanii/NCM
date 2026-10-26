@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ncm-lab"
+version = "0.1.0"
+description = "Learning Next-Concept Modeling: toy model, benchmarks, RAG/agents, production service"
+readme = "README.md"
+requires-python = ">=3.10"
+# Install PyTorch separately with the CUDA build first (see README).
+dependencies = [
+    "numpy",
+    "torch",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "pre-commit"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["gpu: needs a CUDA GPU (skipped in CI)"]
