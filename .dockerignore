@@ -1,0 +1,12 @@
+# Keep the build context small: weights and data are mounted at runtime.
+.venv
+.git
+artifacts
+data
+third_party
+results
+notebooks
+docs
+tests
+**/__pycache__
+.env

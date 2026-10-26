@@ -1,0 +1,45 @@
+# docker compose up --build      -> API on http://localhost:8000/docs
+# First time only: docker compose exec ollama ollama pull qwen2.5:3b
+services:
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama-models:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  api:
+    build: .
+    depends_on:
+      - ollama
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NCM_OLLAMA_HOST: http://ollama:11434
+      NCM_ARTIFACTS_DIR: /app/artifacts
+      NCM_DATA_DIR: /app/data
+    volumes:
+      - ./artifacts:/app/artifacts:ro
+      - ./data:/app/data
+      - hf-cache:/app/.cache/huggingface
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama-models:
+  hf-cache:
