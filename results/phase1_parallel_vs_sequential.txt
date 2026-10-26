@@ -1,0 +1,6 @@
+device: cuda
+ tokens  sequential ms  parallel ms    ratio
+     16          1.416        0.091    15.5x
+     64          5.387        0.218    24.7x
+    256         19.153        0.092   209.3x
+   1024         74.007        0.201   368.1x

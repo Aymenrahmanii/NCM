@@ -20,8 +20,9 @@ Each finished phase is tagged `phase-N`. Notes per phase live in `docs/`.
 
 ```bash
 git clone https://github.com/Aymenrahmanii/NCM.git ncm-lab && cd ncm-lab
-python3 -m venv .venv && source .venv/bin/activate
-pip install torch --index-url https://download.pytorch.org/whl/cu121
+curl -LsSf https://astral.sh/uv/install.sh | sh   # or: sudo apt install python3.12-venv
+uv venv --seed .venv && source .venv/bin/activate     # or: python3 -m venv .venv
+pip install torch --index-url https://download.pytorch.org/whl/cu130
 pip install -e ".[dev]"
 cp .env.example .env
 ```
