@@ -27,6 +27,15 @@ Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss | ForEach-Obj
 $docker = Join-Path $env:LOCALAPPDATA "Docker\wsl\disk\docker_data.vhdx"
 if (Test-Path $docker) { $disks += $docker }
 
+# Linux must first tell the disk which blocks are free, or compacting releases nothing
+Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss | ForEach-Object {
+    $name = (Get-ItemProperty $_.PSPath).DistributionName
+    if ($name -and $name -notlike "docker-desktop*") {
+        Write-Host "fstrim in $name..."
+        wsl -d $name -u root -- fstrim -av
+    }
+}
+
 Write-Host "Stopping Docker Desktop and WSL..."
 Get-Process "Docker Desktop" -ErrorAction SilentlyContinue | Stop-Process -Force
 wsl --shutdown
@@ -37,7 +46,8 @@ foreach ($d in $disks) {
     $script = "select vdisk file=`"$d`"`nattach vdisk readonly`ncompact vdisk`ndetach vdisk`n"
     $tmp = New-TemporaryFile
     Set-Content -Path $tmp -Value $script -Encoding ascii
-    diskpart /s $tmp | Out-Null
+    $msg = diskpart /s $tmp
+    $msg | Select-String -Pattern "percent|pourcentage|error|erreur|succe" | ForEach-Object { "    $_" }
     Remove-Item $tmp
     $after = (Get-Item $d).Length / 1GB
     "{0,-90} {1,6:N1} GB -> {2,6:N1} GB" -f $d, $before, $after
