@@ -1,0 +1,163 @@
+== real story 1: reconstruction from the first k levels ==
+original: Spot. Spot saw the shiny car and said, "Wow, Kitty, your car is so bright and clean!" Kitty smiled and replied, "Thank you, Spot. I polish it every day."
+
+After playing with the car, Kitty and Spot felt thirsty. They found a small pond with clear water. They
+level 1: Once upon a a, there was a little..............................
+
+
+
+
+,
+,
+.
+
+
+
+
+,
+
+
+
+,,,..
+level 2: Once day a time, there was a little boy...,,,,,,,,,,,,,,,,,,,,,,,
+
+
+
+
+
+
+
+
+
+,,,,..............
+level 3: Once upon a time, there. a. said,,,, I I,,, and and.
+
+ smiled smiled said said said, ",,, to to to."."."."
+
+ playing playing playing playing, and...... saw saw the the the the...
+level 4: " and, are good the the yard said said said ",, you, so so so and. to to. smiled and said said, ",,,, can to to every day."
+
+Suddenly, playing,,, Tom Tom.... They saw saw a a in water water..
+level 5: Jimmy and, I a in the and said,, ",,, favorite car is so round and to. Tim smiled and said, " " you you,. can it it it day."
+
+Then,, the car, Tom. and and thirsty. They found a small stream in the water. They
+level 6: Joe. Spot saw the shiny car and said, "Wow, Kitty, your car is so bright and clean!" Kitty smiled and replied, "Thank you, Spot. I polish it every day."
+
+After playing with the car, Sue and Spot felt thirsty. They found a small pond with clear water. They
+
+== real story 2: reconstruction from the first k levels ==
+original: Once upon a time, in a big forest, there lived a rhinoceros named Roxy. Roxy loved to climb. She climbed trees, rocks, and hills. One day, Roxy found an icy hill. She had never seen anything like it before. It was
+level 1: Once upon a time, there was a little,......... and and and..........................................
+level 2: Once upon a time, in a big,, there lived a a named named...... the.. the. the..,..,,,,,, the the...,,,,..... was. seen seen seen before before. before..
+level 3: Once upon a time, in a big,,, there a a, named named.....yyyyy loved loved loved the the the thesssss.... day dayueee was a a He.. before seen seen seen anything anything anything anything.
+level 4: Once upon a time, in a big forest,, there a chick chick named named R Ru....y-- loved loved.. the,,,,sss.. One day, Ruy was was an an adventure. He had never never anything anything anything anything. It was
+level 5: Once upon a time, in a big forest, there lived a rhinohino named Roo andon..xxy loved to climb. She looked,,, and andss. One day, Ro namede found an an attic. She had never seen anything like like before. It was
+level 6: Once upon a time, in a big forest, there lived a grayhinoceros named Roxy. Roxy loved to climb. She sw trees, rocks and and hills. One day, Roxy found an icy hill. She had never seen anything like it before. It was
+
+== generated story 1: canvas decoded after each level ==
+level 1: Lily and Ben were playing hide and seek in the... was the seek and and and and............................................
+level 2: Lily and Ben were playing hide the seek in They liked to to and the seek hide and and Lily Lily Ben a a a and and and and and and and and and. and and and and and and and and...
+
+
+
+
+
+,,, Ben,,,,,,,.
+level 3: Lily and Ben were playing in the seek in the garden. Lily was was seek and and hid hid hid hid hid.. and to and and and and and..... to to to to to..
+
+
+
+
+, to hide hide hide hide hide play Ben Ben Ben Ben Ben Ben Ben
+level 4: Lily and Max were playing hide and seek in park park. Lily was was seek and and and hid hid hid hid hid hid and and and and and and and and and to.. They They started to to and..
+
+"LetLet's hide the,!" Ben play it.
+
+
+
+
+
+level 5: Lily and Max were playing with and seek the park park. park was was seek and and Lily was aer and and Lily Lily kept to.. and and was was and to to They They and started to and..
+
+"Let's go go the cat said, with with it.
+
+
+
+
+level 6: Lily and Max were playing with and seek in the park. Ben was the cheer and Lily waserer and can Lily always to as. Lily bee was was seek and both. cry They and tried to dry outside.
+
+"Let's's go the cat said, it with it. says
+
+
+
+
+== generated story 2: canvas decoded after each level ==
+level 1: One day, a little boy a a...............................
+.
+
+
+
+
+....
+
+
+
+..........
+level 2: One day, a boy boy... a...............
+
+
+
+
+
+
+
+
+
+€€€€€€€€
+
+
+
+
+
+
+,, said,, said said,,,,,,
+
+level 3: One day, a went went went went a a a. He... He asked asked asked asked if if to to to to a a a a a to the the the the the the the
+
+
+
+
+
+
+
+ said said said said said said " " " " " looks looks looks looks!
+level 4: One day, Jack went went outside he he wanted to to He a a star. he he asked his his mom mom could could could a a att to at at the the flag flag flagttt
+
+
+
+ said said said, " "!!.
+,, " "ThatThat!"
+level 5: One day, Jack went a, he wanted to to wear He had a dress. he asked asked his mom mom them but but could a a ss star at at the look. "œThe flag!!
+
+
+€ smiled and, " it it!"
+
+ and looked, " w!" expensive
+level 6: One day, Jack was his, Jack wanted to to. He a pretty gem. they he asked his mom him them, we smell beautiful A circle€™est down at she the.John€!". could lock!"ââster
+€ smiled and, " Mum this€
+Sara thoughtMommy looked shouted: amazing how
+
+== generated story 3: canvas decoded after each level ==
+level 1: Once upon a time there was a a bear.. He...... and.............................................
+level 2: Once upon a time, there was a little boy named Joe. He was a a the the the the.. the the the the the the the. the...
+
+
+
+
+,
+ the the the the he he he. he..... the... the...
+level 3: Once upon a time there was a little boy named.. name was was a secret a was was was cave.. He cave liked to to to..
+ day day he he decided to to explore explore the the the... He he he, he he the the the the the the the the..
+level 4: Once upon a time there was a little boy. was was was was he was was.. was was the the the woods He He liked to the the. One day,, decided decided to explore explore the forest world and... he he he saw saw,ure the the.. He the the and and
+level 5: Once upon a time there was a little boy called.. was was he was very. The was living the the house. He had liked to the cave. One day, he decided to go go explore woods forest explore and... looked he saw some trees trees suddenly he the door. He into the and and
+level 6: Once upon a time there was a little boy called Tim. Tim was that elephant obedient who was was someone the house house. He had to explore the the. One day, he decided to go to in the woods explore the inside.'s He looked he some monkey trees when landed the door. He into into woods and

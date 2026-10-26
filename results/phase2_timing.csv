@@ -1,0 +1,10 @@
+model,batch_size,median_ms_per_batch,samples_per_sec
+toy NCM (6 passes),1,33.89,29.5
+AR + KV cache (64 passes),1,316.32,3.2
+AR no cache,1,342.17,2.9
+toy NCM (6 passes),16,37.2,430.1
+AR + KV cache (64 passes),16,287.06,55.7
+AR no cache,16,312.94,51.1
+toy NCM (6 passes),128,88.82,1441.2
+AR + KV cache (64 passes),128,269.03,475.8
+AR no cache,128,673.11,190.2
