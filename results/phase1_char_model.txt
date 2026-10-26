@@ -1,0 +1,44 @@
+params: 1.83M
+
+== sample before training ==
+
+PSD?UJIMLheGZDkCS!PimVGLs3u,LycXDcFA;hdSuNuF:iFxn.Nn;D.g'UE$SwJGtUucyqi$JZPPVfKkXsd!riNJuRMTngYLR lG3JJW-i'ntLdtnhLCZhbuH&WtBxqPraByKrGj-LViBJ,FaarIS:kverC,QwVaZgPNakBBgLVTBSTD,,Xm
+rV-FlW
+-EyIW:Q
+uyIUAIvft'IWKIVkQyryNrIf,MJBaE:A$,S,ofQfMbBGI?zc
+VowA:a3sM pbGMVeCTFrA,If?LnqSeM:o?HL&gUdFDucCRXrzif:B:a
+
+== training ==
+step     0  train 4.365  val 4.371
+step   300  train 1.897  val 2.002
+step   600  train 1.571  val 1.750
+step   900  train 1.452  val 1.657
+step  1200  train 1.372  val 1.604
+step  1500  train 1.318  val 1.570
+step  1800  train 1.273  val 1.566
+step  2100  train 1.236  val 1.550
+step  2400  train 1.217  val 1.555
+step  2700  train 1.189  val 1.549
+step  3000  train 1.151  val 1.566
+
+== sample after training ==
+
+As as I do constable than the enjoy their crow
+As when you and so are many this death.
+
+LORD STANLEY:
+And patience Lancaster; be gone, with her the bane
+Franches on this manner of his gracious parado,
+When Godface was to done a thousand fellowship:
+He hath not, so much more faithful life.
+
+KING RICHARD III:
+Thou art this friends: a mother nurses,
+So shall lives the debting of the place.
+
+KING RICHARD III:
+O pardoning of ears!
+
+HENRY BOLINGBROKE:
+Norfolk, too Edward!
+Alas, I can queen, and go alo
