@@ -36,18 +36,34 @@ Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss | ForEach-Obj
     }
 }
 
+function Test-Free([string]$path) {
+    # true when no process (WSL, Docker) has the disk file open
+    try { [IO.File]::Open($path, 'Open', 'Read', 'None').Close(); return $true } catch { return $false }
+}
+
 Write-Host "Stopping Docker Desktop and WSL..."
+Write-Host "  (close VS Code windows connected to WSL first, or they restart it)"
 Get-Process "Docker Desktop" -ErrorAction SilentlyContinue | Stop-Process -Force
 wsl --shutdown
 Start-Sleep -Seconds 5
 
 foreach ($d in $disks) {
+    $waited = 0
+    while (-not (Test-Free $d) -and $waited -lt 60) {
+        wsl --shutdown          # something restarted WSL; stop it again
+        Start-Sleep -Seconds 5
+        $waited += 5
+    }
+    if (-not (Test-Free $d)) {
+        "{0,-90} skipped: still in use (VS Code, a WSL terminal or Docker keeps it open)" -f $d
+        continue
+    }
     $before = (Get-Item $d).Length / 1GB
     $script = "select vdisk file=`"$d`"`nattach vdisk readonly`ncompact vdisk`ndetach vdisk`n"
     $tmp = New-TemporaryFile
     Set-Content -Path $tmp -Value $script -Encoding ascii
     $msg = diskpart /s $tmp
-    $msg | Select-String -Pattern "percent|pourcentage|error|erreur|succe" | ForEach-Object { "    $_" }
+    $msg | Select-String -Pattern "error|erreur|compact" | ForEach-Object { "    $_" }
     Remove-Item $tmp
     $after = (Get-Item $d).Length / 1GB
     "{0,-90} {1,6:N1} GB -> {2,6:N1} GB" -f $d, $before, $after
