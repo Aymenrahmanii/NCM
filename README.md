@@ -20,7 +20,7 @@ and an agent, and serves everything through a production-style API.
 | Does the speed matter in RAG / agents? | **No.** Compressing chunks with NCM cut RAG accuracy from 87.5% to 10%; NCM translation lowered multilingual RAG accuracy (37.5% vs 67.5%) and was 2× slower in bulk; in the agent the LLM takes 91–97% of the time. |
 | Toy NCM (Phase 2) | Coarse-to-fine works (reconstruction 17% → 98.7% over 6 levels); 9.3× faster than a toy AR model at batch 1, 3.0× at batch 128, but far less fluent. |
 
-Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
+Limits suite (in progress): [docs/limits.md](docs/limits.md) · Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 [Phase 4](docs/phase4-results.md) · [Phase 5](docs/phase5.md) · [Phase 6](docs/phase6.md)
 
 ![XSum benchmark](results/phase4_xsum_fp16.png)
@@ -52,6 +52,8 @@ flowchart LR
 | `src/ncm_lab/bench/` | 4 | benchmark harness (quality + latency + throughput + memory) and charts |
 | `src/ncm_lab/rag/`, `src/ncm_lab/agents/` | 5 | RAG pipeline, experiments, hand-written tool-calling agent |
 | `src/ncm_lab/api/` | 6 | FastAPI service, settings, schemas, model registry |
+| `src/ncm_lab/limits/` | 7 | limits suite: 8 experiments that push NCM until it breaks ([docs](docs/limits.md)) |
+| `paper/` | – | paper draft (LaTeX); tables and figures fill in from the limits suite |
 | `results/` | all | every CSV, chart and sample output quoted in the docs |
 | `docs/` | all | one write-up per phase |
 
@@ -64,7 +66,9 @@ pip install torch --index-url https://download.pytorch.org/whl/cu130 && pip inst
 bash scripts/download_data.sh && bash scripts/download_ncm.sh          # ~2.5 GB
 bash scripts/install_ollama_user.sh && (bash scripts/ollama.sh serve &) && bash scripts/ollama.sh pull qwen2.5:3b
 bash scripts/reproduce_results.sh phase2-train                          # toy NCM, ~1 h
-bash scripts/reproduce_results.sh                                       # every number in results/, ~45 min
+bash scripts/reproduce_results.sh                                       # every number in results/
+python -m ncm_lab.limits.run all                                        # limits suite only, ~1-2 h
+bash paper/build.sh                                                     # paper/main.pdf
 ```
 
 Serve it:

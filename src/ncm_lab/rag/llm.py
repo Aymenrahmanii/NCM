@@ -22,17 +22,22 @@ class LLMReply:
 
 class OllamaLLM:
     def __init__(self, model: str = DEFAULT_MODEL, host: str = DEFAULT_HOST,
-                 num_ctx: int = 4096, timeout: float = 120.0):
+                 num_ctx: int = 4096, timeout: float = 120.0, temperature: float = 0.0,
+                 seed: int = 0):
         self.model = model
         self.host = host.rstrip("/")
         self.num_ctx = num_ctx
         self.timeout = timeout
+        self.temperature = temperature  # default for every call; 0 = deterministic
+        self.seed = seed
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None,
-             temperature: float = 0.0) -> LLMReply:
+             temperature: float | None = None) -> LLMReply:
+        temperature = self.temperature if temperature is None else temperature
         body = {"model": self.model, "messages": messages, "stream": False,
                 "keep_alive": "30m",
-                "options": {"temperature": temperature, "num_ctx": self.num_ctx, "seed": 0}}
+                "options": {"temperature": temperature, "num_ctx": self.num_ctx,
+                            "seed": self.seed}}
         if tools:
             body["tools"] = tools
         start = time.perf_counter()

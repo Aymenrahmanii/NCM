@@ -16,7 +16,7 @@ The model stays experimental; the service around it is built the way teams build
 | logging | one JSON object per line with `request_id`, path, status, latency; the id is echoed in `x-request-id` | `api/main.py` |
 | metrics | Prometheus histogram of latency per endpoint + request counter at `/metrics` | `api/main.py` |
 | tests without a GPU | `NCM_BACKEND=fake` swaps in tiny stand-in models with the same interface | `api/registry.py` |
-| tests | 37 CPU tests (API, validation, error paths, agent loop with a scripted LLM, RAG helpers, toy NCM) + 3 GPU tests (wrapper, ROUGE regression) | `tests/` |
+| tests | 54 CPU tests (API, validation, error paths, agent loop with a scripted LLM, RAG helpers, toy NCM, every limits experiment with stand-in models) + 3 GPU tests (wrapper, ROUGE regression) | `tests/` |
 | quality regression | fails if ROUGE-L on 20 fixed XSum articles drops below 22 (measured: 27.1) | `tests/test_quality_regression.py` |
 | code quality | ruff (lint) via pre-commit | `pyproject.toml`, `.pre-commit-config.yaml` |
 | container | non-root user, health check, weights mounted read-only, small build context | `Dockerfile`, `.dockerignore` |

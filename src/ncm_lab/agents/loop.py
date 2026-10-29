@@ -47,6 +47,7 @@ def run_agent(task: str, llm: OllamaLLM, tools: Toolbox, max_steps: int = 8) -> 
     messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": task}]
     steps = []
     start = time.perf_counter()
+    out_of_steps = False
     for _ in range(max_steps):
         reply = llm.chat(messages, tools=SCHEMAS)
         steps.append(llm_step(reply))
@@ -71,9 +72,11 @@ def run_agent(task: str, llm: OllamaLLM, tools: Toolbox, max_steps: int = 8) -> 
         # out of steps: one last call without tools, so the tool results are not wasted
         reply = llm.chat(messages + [{"role": "user", "content": OUT_OF_STEPS}])
         steps.append(llm_step(reply))
+        out_of_steps = True
         answer = reply.content or "(stopped: too many steps)"
     total = (time.perf_counter() - start) * 1000
-    return {"task": task, "answer": answer, "steps": steps, "total_ms": round(total, 1),
+    return {"task": task, "answer": answer, "steps": steps, "out_of_steps": out_of_steps,
+            "total_ms": round(total, 1),
             "llm_ms": round(sum(s["ms"] for s in steps if s["kind"] == "llm"), 1),
             "ncm_ms": round(sum(s["ms"] for s in steps if s.get("ncm")), 1),
             "other_tool_ms": round(sum(s["ms"] for s in steps
