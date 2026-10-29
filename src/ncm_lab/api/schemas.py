@@ -29,6 +29,33 @@ class TranslateRequest(TextsRequest):
     pass
 
 
+class SudokuRequest(BaseModel):
+    puzzles: list[str] = Field(..., min_length=1, max_length=MAX_TEXTS, examples=[[
+        "530070000600195000098000060800060003400803001700020006060000280000419005000080079"]])
+
+    @field_validator("puzzles")
+    @classmethod
+    def eighty_one_cells(cls, puzzles: list[str]) -> list[str]:
+        out = []
+        for i, p in enumerate(puzzles):
+            cells = "".join(p.split())  # line breaks and spaces between rows are fine
+            if len(cells) != 81 or any(c not in "0123456789." for c in cells):
+                raise ValueError(f"puzzles[{i}] must be 81 cells of 1-9, with 0 or . for blanks")
+            out.append(cells)
+        return out
+
+
+class SudokuSolution(BaseModel):
+    solution: str
+    valid: bool
+
+
+class SudokuResponse(BaseModel):
+    solutions: list[SudokuSolution]
+    model: str
+    latency_ms: float
+
+
 class TextsResponse(BaseModel):
     outputs: list[str]
     model: str

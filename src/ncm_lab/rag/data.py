@@ -47,10 +47,26 @@ def eval_questions(n: int = 40) -> list[dict]:
              "paragraph": ctx_id[r["context"]]} for r in picked]
 
 
+# a period after these does not end a sentence: "z. B.", "Dr. Müller", "Nr. 5", ...
+ABBREVIATIONS = {"bzw", "ca", "co", "dr", "etc", "evtl", "geb", "gest", "ggf", "inc", "jh",
+                 "jr", "ltd", "mr", "mrs", "ms", "nr", "prof", "sog", "sr", "st", "usw", "vgl",
+                 "vs"}
+# ... nor after a 1-2 digit ordinal ("am 3. Oktober", "im 19. Jahrhundert"), a Roman
+# numeral ("Friedrich II. war") or a single letter ("J. S. Bach", "z. B.")
+NOT_A_SENTENCE_END = re.compile(r"(?:\b\d{1,2}|\b[IVXLC]+|\b\w)\.$")
+
+
 def split_sentences(text: str) -> list[str]:
-    """Simple sentence splitter, good enough for Wikipedia prose."""
-    parts = re.split(r"(?<=[.!?])\s+(?=[A-ZÄÖÜ0-9\"„])", text.strip())
-    return [p for p in parts if p]
+    """Simple sentence splitter, good enough for English and German Wikipedia prose."""
+    parts = [p for p in re.split(r"(?<=[.!?])\s+(?=[A-ZÄÖÜ0-9\"„])", text.strip()) if p]
+    out = []
+    for p in parts:
+        if out and (NOT_A_SENTENCE_END.search(out[-1])
+                    or out[-1].rsplit(None, 1)[-1].rstrip(".").lower() in ABBREVIATIONS):
+            out[-1] += " " + p
+        else:
+            out.append(p)
+    return out
 
 
 def normalize(text: str) -> str:

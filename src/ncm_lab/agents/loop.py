@@ -2,7 +2,8 @@
 
 1. send the conversation + tool schemas to the LLM
 2. if it asks for tools, run them and append the results as `tool` messages
-3. repeat until the LLM answers without asking for a tool
+3. repeat until the LLM answers without asking for a tool (or, out of steps, ask it to
+   answer from what it has)
 """
 
 import json
@@ -21,28 +22,44 @@ SYSTEM = """You are an assistant that answers by calling tools. Rules:
 - Call summarize_fast only when the user asks for a summary.
 When you have what you need, reply with a short final answer and no tool call."""
 
+OUT_OF_STEPS = ("You have used all your tool calls. Give your final answer now from the tool "
+                "results above, without calling a tool.")
+
+
+def parse_args(raw) -> dict | None:
+    """Tool arguments arrive as a dict or a JSON string; None if they are not a JSON object."""
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw) if raw.strip() else {}
+        except json.JSONDecodeError:
+            return None
+    raw = {} if raw is None else raw
+    return raw if isinstance(raw, dict) else None
+
+
+def llm_step(reply) -> dict:
+    return {"kind": "llm", "ms": round(reply.ms, 1), "prompt_tokens": reply.prompt_tokens,
+            "completion_tokens": reply.completion_tokens,
+            "requested": [c["function"]["name"] for c in reply.tool_calls]}
+
 
 def run_agent(task: str, llm: OllamaLLM, tools: Toolbox, max_steps: int = 8) -> dict:
     messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": task}]
     steps = []
     start = time.perf_counter()
-    answer = "(stopped: too many steps)"
     for _ in range(max_steps):
         reply = llm.chat(messages, tools=SCHEMAS)
-        steps.append({"kind": "llm", "ms": round(reply.ms, 1),
-                      "prompt_tokens": reply.prompt_tokens,
-                      "completion_tokens": reply.completion_tokens,
-                      "requested": [c["function"]["name"] for c in reply.tool_calls]})
+        steps.append(llm_step(reply))
         messages.append(reply.raw_message)
         if not reply.tool_calls:
             answer = reply.content
             break
         for call in reply.tool_calls:
             name = call["function"]["name"]
-            args = call["function"].get("arguments") or {}
-            if isinstance(args, str):
-                args = json.loads(args)
-            if name in tools.functions:
+            args = parse_args(call["function"].get("arguments"))
+            if args is None:
+                result, ms, args = f"error: arguments for {name} must be a JSON object", 0.0, {}
+            elif name in tools.functions:
                 result, ms = tools.call(name, args)
             else:
                 result, ms = f"error: unknown tool {name}", 0.0
@@ -50,6 +67,11 @@ def run_agent(task: str, llm: OllamaLLM, tools: Toolbox, max_steps: int = 8) -> 
                           "args": {k: str(v)[:200] for k, v in args.items()},
                           "ms": round(ms, 1), "result": result[:400]})
             messages.append({"role": "tool", "content": result, "tool_name": name})
+    else:
+        # out of steps: one last call without tools, so the tool results are not wasted
+        reply = llm.chat(messages + [{"role": "user", "content": OUT_OF_STEPS}])
+        steps.append(llm_step(reply))
+        answer = reply.content or "(stopped: too many steps)"
     total = (time.perf_counter() - start) * 1000
     return {"task": task, "answer": answer, "steps": steps, "total_ms": round(total, 1),
             "llm_ms": round(sum(s["ms"] for s in steps if s["kind"] == "llm"), 1),

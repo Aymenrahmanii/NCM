@@ -8,15 +8,15 @@ The model stays experimental; the service around it is built the way teams build
 
 | concern | how | file |
 |---|---|---|
-| API | FastAPI: `/summarize`, `/translate`, `/rag/query`, `/agent/run`, `/health`, `/metrics`; docs at `/docs` | `src/ncm_lab/api/main.py` |
+| API | FastAPI: `/summarize`, `/translate`, `/sudoku/solve`, `/rag/query`, `/agent/run`, `/health`, `/metrics`; docs at `/docs` | `src/ncm_lab/api/main.py` |
 | input validation | Pydantic schemas: empty / blank / too many / too long texts → 422 with a clear message | `api/schemas.py` |
 | configuration | pydantic-settings, `NCM_*` environment variables or `.env`; `.env.example` committed, `.env` ignored | `api/settings.py` |
 | model lifecycle | all models load once at startup (FastAPI lifespan), never per request | `api/registry.py` |
-| GPU safety | one model call at a time (asyncio lock); timeout → 504; CUDA out-of-memory → 503 with advice, cache emptied; LLM down → 502 | `api/main.py` |
+| GPU safety | one model call at a time (asyncio lock, held until the worker thread really ends, even after a timeout); timeout → 504; GPU still busy → 503; CUDA out-of-memory → 503 with advice, cache emptied; LLM down → 502; any other error → 500 in the same JSON shape, logged with its `request_id` | `api/main.py` |
 | logging | one JSON object per line with `request_id`, path, status, latency; the id is echoed in `x-request-id` | `api/main.py` |
 | metrics | Prometheus histogram of latency per endpoint + request counter at `/metrics` | `api/main.py` |
 | tests without a GPU | `NCM_BACKEND=fake` swaps in tiny stand-in models with the same interface | `api/registry.py` |
-| tests | 23 CPU tests (API, validation, RAG helpers, toy NCM) + 3 GPU tests (wrapper, ROUGE regression) | `tests/` |
+| tests | 37 CPU tests (API, validation, error paths, agent loop with a scripted LLM, RAG helpers, toy NCM) + 3 GPU tests (wrapper, ROUGE regression) | `tests/` |
 | quality regression | fails if ROUGE-L on 20 fixed XSum articles drops below 22 (measured: 27.1) | `tests/test_quality_regression.py` |
 | code quality | ruff (lint) via pre-commit | `pyproject.toml`, `.pre-commit-config.yaml` |
 | container | non-root user, health check, weights mounted read-only, small build context | `Dockerfile`, `.dockerignore` |
@@ -40,8 +40,9 @@ The model stays experimental; the service around it is built the way teams build
   (`could not select device driver "nvidia"`). Install it once with
   `bash scripts/setup_docker_gpu.sh` (needs sudo). Docker Desktop has it built in.
 - **A timeout does not stop a GPU call.** `asyncio.wait_for` returns 504 to the client but
-  the worker thread keeps running; a real deployment would run models in a separate worker
-  process that can be killed.
+  the worker thread keeps running. The GPU lock is therefore released only when the thread
+  ends (not when the client gets its 504), so a timed-out call can never overlap the next one;
+  a real deployment would run models in a separate worker process that can be killed.
 - **Cold start is slow:** loading three NCM models and the vector store takes ~1 minute,
   and the first LLM call takes ~8 s while Ollama loads the model. The Docker health check
   allows 3 minutes before it starts counting failures.

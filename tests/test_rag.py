@@ -19,6 +19,15 @@ def test_split_sentences():
                                      "Sie hat 3,7 Millionen Einwohner!", "Stimmt das?", "Ja."]
 
 
+def test_split_sentences_keeps_ordinals_abbreviations_and_initials():
+    text = ("Am 3. Oktober 1990 kam die Einheit. Er spielte z. B. Werke von J. S. Bach. "
+            "Friedrich II. war König. Dr. Müller kam 1990. Danach ging er.")
+    assert split_sentences(text) == ["Am 3. Oktober 1990 kam die Einheit.",
+                                     "Er spielte z. B. Werke von J. S. Bach.",
+                                     "Friedrich II. war König.", "Dr. Müller kam 1990.",
+                                     "Danach ging er."]
+
+
 def test_sudoku_validator():
     good = FakeSudoku("s").generate(["x"])[0]
     assert NCMSudokuSolver.is_valid(good)

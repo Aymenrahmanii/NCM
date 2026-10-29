@@ -71,10 +71,22 @@ class Toolbox:
         return self.summarizer.generate([text])[0]
 
     def translate_de_en(self, text: str) -> str:
-        # NCM WMT14 reads at most 96 tokens, so translate sentence by sentence
-        return " ".join(self.translator.generate(split_sentences(text) or [text]))
+        return self.translate_many([text])[0]
+
+    def translate_many(self, texts: list[str]) -> list[str]:
+        """NCM WMT14 reads at most 96 tokens, so translate sentence by sentence, with the
+        sentences of every text in one batched call."""
+        pieces = [split_sentences(t) or [t] for t in texts]
+        flat = self.translator.generate([s for p in pieces for s in p])
+        out, i = [], 0
+        for p in pieces:
+            out.append(" ".join(flat[i : i + len(p)]))
+            i += len(p)
+        return out
 
     def solve_sudoku(self, puzzle: str) -> str:
+        if isinstance(puzzle, int):  # LLMs sometimes send the digits as a JSON number,
+            puzzle = str(puzzle).zfill(81)  # which drops the leading zeros
         solution = self.sudoku.generate([puzzle])[0]
         valid = self.sudoku.is_valid(solution, puzzle)
         rows = "\n".join(solution[9 * i : 9 * i + 9] for i in range(9))

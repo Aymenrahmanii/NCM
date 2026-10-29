@@ -21,8 +21,8 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from . import registry as reg
 from .schemas import (AgentRunRequest, AgentRunResponse, ErrorResponse, HealthResponse,
-                      RAGQueryRequest, RAGQueryResponse, SummarizeRequest, TextsResponse,
-                      TranslateRequest)
+                      RAGQueryRequest, RAGQueryResponse, SudokuRequest, SudokuResponse,
+                      SudokuSolution, SummarizeRequest, TextsResponse, TranslateRequest)
 from .settings import get_settings
 
 log = logging.getLogger("ncm_lab.api")
@@ -79,7 +79,12 @@ async def request_context(request: Request, call_next):
     rid = request.headers.get("x-request-id") or uuid.uuid4().hex[:12]
     request.state.request_id = rid
     start = time.perf_counter()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as e:  # a bug, not bad input: log it, answer in the usual JSON shape
+        log.exception("unhandled error", extra={"request_id": rid})
+        body = ErrorResponse(error="internal_error", detail=type(e).__name__, request_id=rid)
+        response = JSONResponse(status_code=500, content=body.model_dump())
     ms = (time.perf_counter() - start) * 1000
     response.headers["x-request-id"] = rid
     endpoint = request.url.path
@@ -101,18 +106,30 @@ async def http_error(request: Request, exc: HTTPException):
 async def call_model(request: Request, fn, *args):
     """Run blocking model code in a worker thread with a timeout and clear errors."""
     settings = get_settings()
-    async with request.app.state.gpu_lock:
-        try:
-            return await asyncio.wait_for(run_in_threadpool(fn, *args),
-                                          timeout=settings.request_timeout_s)
-        except asyncio.TimeoutError:
-            # note: the worker thread finishes in the background; the client gets 504 now
-            raise HTTPException(504, f"model call took longer than {settings.request_timeout_s}s")
-        except torch.cuda.OutOfMemoryError:
-            torch.cuda.empty_cache()
-            raise HTTPException(503, "GPU out of memory; retry with fewer or shorter texts")
-        except requests.RequestException as e:
-            raise HTTPException(502, f"LLM backend unavailable: {type(e).__name__}")
+    lock = request.app.state.gpu_lock
+    try:
+        await asyncio.wait_for(lock.acquire(), timeout=settings.request_timeout_s)
+    except asyncio.TimeoutError:
+        raise HTTPException(503, "GPU busy with an earlier request; retry later")
+    task = asyncio.ensure_future(run_in_threadpool(fn, *args))
+
+    def release(t: asyncio.Future) -> None:
+        # a timed-out call keeps running in its thread, so the GPU is only free once it ends
+        lock.release()
+        if not t.cancelled():
+            t.exception()  # mark as retrieved, so asyncio does not warn after a timeout
+
+    task.add_done_callback(release)
+    try:
+        return await asyncio.wait_for(asyncio.shield(task), timeout=settings.request_timeout_s)
+    except asyncio.TimeoutError:
+        log.warning("model call timed out", extra={"timeout_s": settings.request_timeout_s})
+        raise HTTPException(504, f"model call took longer than {settings.request_timeout_s}s")
+    except torch.cuda.OutOfMemoryError:
+        torch.cuda.empty_cache()
+        raise HTTPException(503, "GPU out of memory; retry with fewer or shorter texts")
+    except requests.RequestException as e:
+        raise HTTPException(502, f"LLM backend unavailable: {type(e).__name__}")
 
 
 def registry(request: Request) -> reg.Registry:
@@ -142,10 +159,21 @@ async def summarize(body: SummarizeRequest, request: Request) -> TextsResponse:
 async def translate(body: TranslateRequest, request: Request) -> TextsResponse:
     start = time.perf_counter()
     tools = registry(request).toolbox
-    outputs = await call_model(request, lambda ts: [tools.translate_de_en(t) for t in ts],
-                               body.texts)
+    outputs = await call_model(request, tools.translate_many, body.texts)
     return TextsResponse(outputs=outputs, model="ncm-wmt14",
                          latency_ms=round((time.perf_counter() - start) * 1000, 1))
+
+
+@app.post("/sudoku/solve", response_model=SudokuResponse,
+          responses={503: {"model": ErrorResponse}, 504: {"model": ErrorResponse}})
+async def solve_sudoku(body: SudokuRequest, request: Request) -> SudokuResponse:
+    start = time.perf_counter()
+    solver = registry(request).sudoku
+    solutions = await call_model(request, solver.generate, body.puzzles)
+    return SudokuResponse(
+        solutions=[SudokuSolution(solution=s, valid=solver.is_valid(s, p))
+                   for s, p in zip(solutions, body.puzzles)],
+        model="ncm-sudoku-hard", latency_ms=round((time.perf_counter() - start) * 1000, 1))
 
 
 @app.post("/rag/query", response_model=RAGQueryResponse,
