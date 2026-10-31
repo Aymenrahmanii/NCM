@@ -7,18 +7,24 @@
 \toprule
 set & solver & n & correct & valid\_solution & full\_grid\_returned & said\_unsolvable & ms\_per\_puzzle \\
 \midrule
-hard & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 0.64 \\
-shuffled & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 0.67 \\
-fewer\_clues\_5 & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 2.2 \\
-fewer\_clues\_15 & exact solver (CPU) & 100 & 0.99 & 0.99 & 0.99 & 0.0 & 142.37 \\
+hard & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 1.03 \\
+shuffled & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 1.06 \\
+fewer\_clues\_5 & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 3.74 \\
+fewer\_clues\_15 & exact solver (CPU) & 100 & 0.99 & 0.99 & 0.99 & 0.0 & 191.08 \\
 unsolvable & exact solver (CPU) & 100 & 1.0 & 0.0 & 0.0 & 1.0 & 0.01 \\
-already\_solved & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 0.04 \\
-hard & NCM sudoku-hard & 100 & 0.84 & 0.84 & 1.0 & 0.0 & 16.15 \\
-shuffled & NCM sudoku-hard & 100 & 0.85 & 0.85 & 1.0 & 0.0 & 16.07 \\
-fewer\_clues\_5 & NCM sudoku-hard & 100 & 0.32 & 0.32 & 1.0 & 0.0 & 16.45 \\
-fewer\_clues\_15 & NCM sudoku-hard & 100 & 0.01 & 0.01 & 1.0 & 0.0 & 16.37 \\
-unsolvable & NCM sudoku-hard & 100 & 0.0 & 0.0 & 1.0 & 0.0 & 16.98 \\
-already\_solved & NCM sudoku-hard & 100 & 0.0 & 0.0 & 1.0 & 0.0 & 16.52 \\
+already\_solved & exact solver (CPU) & 100 & 1.0 & 1.0 & 1.0 & 0.0 & 0.05 \\
+hard & NCM sudoku-hard & 100 & 0.84 & 0.84 & 1.0 & 0.0 & 28.28 \\
+shuffled & NCM sudoku-hard & 100 & 0.85 & 0.85 & 1.0 & 0.0 & 31.53 \\
+fewer\_clues\_5 & NCM sudoku-hard & 100 & 0.32 & 0.32 & 1.0 & 0.0 & 38.06 \\
+fewer\_clues\_15 & NCM sudoku-hard & 100 & 0.01 & 0.01 & 1.0 & 0.0 & 38.5 \\
+unsolvable & NCM sudoku-hard & 100 & 0.0 & 0.0 & 1.0 & 0.0 & 25.96 \\
+already\_solved & NCM sudoku-hard & 100 & 0.0 & 0.0 & 1.0 & 0.0 & 23.1 \\
+hard & LLM qwen2.5:3b & 20 & 0.0 & 0.0 & 0.3 & 0.0 & 2653.26 \\
+shuffled & LLM qwen2.5:3b & 20 & 0.0 & 0.0 & 0.45 & 0.0 & 4368.13 \\
+fewer\_clues\_5 & LLM qwen2.5:3b & 20 & 0.0 & 0.0 & 0.35 & 0.0 & 1977.45 \\
+fewer\_clues\_15 & LLM qwen2.5:3b & 20 & 0.0 & 0.0 & 0.2 & 0.0 & 1804.69 \\
+unsolvable & LLM qwen2.5:3b & 20 & 0.0 & 0.0 & 0.4 & 0.0 & 4511.48 \\
+already\_solved & LLM qwen2.5:3b & 20 & 1.0 & 1.0 & 1.0 & 0.0 & 3250.52 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}

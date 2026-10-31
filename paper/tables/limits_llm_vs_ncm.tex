@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering\small
+\caption{NCM, the AR baseline and qwen2.5:3b (zero-shot, 4-bit) on the same examples.}
+\label{tab:llm_vs_ncm}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{llrrrrrrr}
+\toprule
+task & system & params\_M & rougeL & bleu & chrf & output\_words & latency\_p50\_ms & latency\_p95\_ms \\
+\midrule
+xsum & NCM (xsum) & 149 & 27.56 &  &  & 21.1 & 264.9 & 365.9 \\
+xsum & bart-base-xsum & 139 & 31.87 &  &  & 18.6 & 331.2 & 528.6 \\
+xsum & qwen2.5:3b (zero-shot) & 3090 & 20.24 &  &  & 23.8 & 968.3 & 1459.8 \\
+wmt14 & NCM (wmt14) & 264 &  & 16.15 & 44.7 & 18.3 & 377.3 & 1333.8 \\
+wmt14 & opus-mt-de-en & 74 &  & 24.67 & 53.82 & 18.9 & 265.3 & 488.1 \\
+wmt14 & qwen2.5:3b (zero-shot) & 3090 &  & 21.93 & 51.16 & 18.6 & 535.5 & 988.2 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

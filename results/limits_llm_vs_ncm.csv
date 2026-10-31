@@ -1,0 +1,7 @@
+task,system,params_M,n,rouge1,rouge2,rougeL,output_words,latency_p50_ms,latency_p95_ms,bleu,chrf
+xsum,NCM (xsum),149,100,33.98,12.59,27.56,21.1,264.9,365.9,,
+xsum,bart-base-xsum,139,100,40.06,16.13,31.87,18.6,331.2,528.6,,
+xsum,qwen2.5:3b (zero-shot),3090,100,27.76,7.37,20.24,23.8,968.3,1459.8,,
+wmt14,NCM (wmt14),264,100,,,,18.3,377.3,1333.8,16.15,44.7
+wmt14,opus-mt-de-en,74,100,,,,18.9,265.3,488.1,24.67,53.82
+wmt14,qwen2.5:3b (zero-shot),3090,100,,,,18.6,535.5,988.2,21.93,51.16
