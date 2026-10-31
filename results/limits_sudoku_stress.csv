@@ -1,0 +1,13 @@
+set,solver,n,correct,valid_solution,full_grid_returned,said_unsolvable,ms_per_puzzle
+hard,exact solver (CPU),100,1.0,1.0,1.0,0.0,0.64
+shuffled,exact solver (CPU),100,1.0,1.0,1.0,0.0,0.67
+fewer_clues_5,exact solver (CPU),100,1.0,1.0,1.0,0.0,2.2
+fewer_clues_15,exact solver (CPU),100,0.99,0.99,0.99,0.0,142.37
+unsolvable,exact solver (CPU),100,1.0,0.0,0.0,1.0,0.01
+already_solved,exact solver (CPU),100,1.0,1.0,1.0,0.0,0.04
+hard,NCM sudoku-hard,100,0.84,0.84,1.0,0.0,16.15
+shuffled,NCM sudoku-hard,100,0.85,0.85,1.0,0.0,16.07
+fewer_clues_5,NCM sudoku-hard,100,0.32,0.32,1.0,0.0,16.45
+fewer_clues_15,NCM sudoku-hard,100,0.01,0.01,1.0,0.0,16.37
+unsolvable,NCM sudoku-hard,100,0.0,0.0,1.0,0.0,16.98
+already_solved,NCM sudoku-hard,100,0.0,0.0,1.0,0.0,16.52
