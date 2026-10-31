@@ -42,8 +42,8 @@ pretrained AR models of similar size under identical conditions. At batch size 1
 tail latency; at batch size 32 it is 2.3--8.7$\times$ slower and uses 5--16$\times$ more GPU
 memory, and its quality is lower (ROUGE-L 27.8 vs.\ 33.5; BLEU 20.0 vs.\ 30.8). Used as
 tools around a 3B LLM, NCM's speed does not help: compressing retrieved passages cuts RAG
-accuracy from 87.5\% to 10\%, NCM translation of a German corpus yields 37.5\% RAG accuracy
-vs.\ 67.5\% for a small AR translator, and in a tool-calling agent the LLM takes 91--97\% of
+accuracy from 87.5\% to 10\%, NCM translation of a German corpus yields 40\% RAG accuracy
+vs.\ 70\% for a small AR translator, and in a tool-calling agent the LLM takes 91--97\% of
 the time. A further suite probes where NCM breaks or wins: input and output length, batch
 size up to out-of-memory, faithfulness, robustness, out-of-distribution Sudoku, a 3B
 general LLM, and agent reliability.
@@ -178,12 +178,13 @@ right paragraph 97.5\% of the time: a one-sentence news-style summary keeps the 
 drops the fact the question asks for. It is also slower (809 vs.\ 423\,ms), because
 compression costs more than the shorter prompt saves.
 
-\paragraph{Multilingual RAG.} Translating the German version of the corpus (1,372 sentences)
-with NCM gives 37.5\% accuracy vs.\ 67.5\% with opus-mt (English originals: 87.5\%), at
-half the bulk speed (20 vs.\ 40 sentences/s at batch 32). NCM translations replace entity
-names (``Luthers Schriften'' $\to$ ``Marx's writings''), which is fatal for retrieval.
-\textbf{TODO:} these numbers used a sentence splitter that also split German ordinals
-(``am 3.\ Oktober''); re-run with the fixed splitter and update.
+\paragraph{Multilingual RAG.} Translating the German version of the corpus (about 1,260
+sentences) with NCM gives 40.0\% accuracy vs.\ 70.0\% with opus-mt (English originals:
+87.5\%), at about half the bulk speed (18.6 vs.\ 34.9 sentences/s at batch 32; paragraph BLEU
+30.8 vs.\ 46.6). NCM translations replace entity names (``Luthers Schriften'' $\to$
+``Marx's writings''), which is fatal for retrieval. A first run with a sentence splitter that
+also split German ordinals (``am 3.\ Oktober'') into separate inputs gave 37.5\% and 67.5\%;
+fixing the splitter helped both translators equally.
 
 \paragraph{Agent.} A hand-written tool-calling loop gives the LLM four tools: search and
 three NCM models (summarize, translate, solve Sudoku). Over six multi-step tasks the LLM
@@ -276,10 +277,10 @@ training distribution: 32\% with five clues removed and 1\% with fifteen, althou
 puzzles are \emph{easier} to satisfy (any valid completion counts) and the exact solver
 completes 100\% and 99\%. Given an unsolvable puzzle it always returns a full grid, never
 signalling a problem; given an already-solved grid it overwrites 7--10 of the given digits
-in the examples we inspected and returns an invalid grid every time. The hard puzzles we
-inspected all have exactly 51 blanks, suggesting the model learned a fixed amount of
-``work'' rather than the constraint of keeping the clues (\textbf{TODO:} confirm the blank
-count over the whole set). A simple backtracking solver on the CPU is exact and takes about 1\,ms per hard puzzle, against NCM's 23--38\,ms per puzzle on the GPU in batches.
+in the examples we inspected and returns an invalid grid every time. Every puzzle in the
+hard test set has exactly 51 blanks, which suggests the model learned a fixed amount of
+``work'' rather than the constraint of keeping the clues: removing clues or giving it none
+to fill moves the input outside anything it has seen. A simple backtracking solver on the CPU is exact and takes about 1\,ms per hard puzzle, against NCM's 23--38\,ms per puzzle on the GPU in batches.
 The general LLM shows the mirror image. On 20 puzzles per set, qwen2.5:3b solves none, returns
 a full 81-digit grid only 20--45\% of the time, and never says a puzzle is unsolvable (it
 was asked to), taking 1.8--4.5\,s per puzzle; but given an already-solved grid it returns
