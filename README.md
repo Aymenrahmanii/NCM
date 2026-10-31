@@ -23,7 +23,7 @@ and an agent, and serves everything through a production-style API.
 | vs a 3B general LLM (qwen2.5:3b) | NCM is 3.7× faster and better on XSum (ROUGE-L 27.6 vs 20.2) but worse on translation (BLEU 16.2 vs 21.9); small AR baselines beat both. As an agent planner the LLM fails systematically (miscopies sudokus 11/11, skips search), whatever NCM does. |
 | Toy NCM (Phase 2) | Coarse-to-fine works (reconstruction 17% → 98.7% over 6 levels); 9.3× faster than a toy AR model at batch 1, 3.0× at batch 128, but far less fluent. |
 
-Limits suite: [docs/limits.md](docs/limits.md) · Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
+**Report (PDF): [paper/ncm-limits-report.pdf](paper/ncm-limits-report.pdf)** · Limits suite: [docs/limits.md](docs/limits.md) · Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 [Phase 4](docs/phase4-results.md) · [Phase 5](docs/phase5.md) · [Phase 6](docs/phase6.md)
 
 ![XSum benchmark](results/phase4_xsum_fp16.png)
