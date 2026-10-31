@@ -5,6 +5,7 @@
 ![PyTorch](https://img.shields.io/badge/PyTorch-CUDA-ee4c2c)
 ![GPU: RTX 3050 6 GB](https://img.shields.io/badge/GPU-RTX%203050%206%20GB-76b900)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23837502.svg)](https://doi.org/10.5281/zenodo.23837502)
 
 An independent study of **Next-Concept Modeling (NCM)**, a new text generation method from
 Hazy Research ([paper](https://arxiv.org/abs/2610.14162), [code](https://github.com/HazyResearch/ncm))
@@ -16,7 +17,7 @@ It goes from a toy NCM built from scratch to the official checkpoints, a fair be
 against autoregressive models and a 3B LLM, a FastAPI service, and a suite of 8 experiments
 that push NCM until it breaks. Every number is reproducible from this repository.
 
-**📄 Report (PDF): [paper/ncm-limits-report.pdf](paper/ncm-limits-report.pdf)**
+**📄 Report (PDF): [paper/ncm-limits-report.pdf](paper/ncm-limits-report.pdf)** · archived on Zenodo: [doi.org/10.5281/zenodo.23837502](https://doi.org/10.5281/zenodo.23837502)
 
 *Aymen Rahmani, final-year Data Science Engineering student. Personal learning project.*
 
@@ -150,6 +151,20 @@ NCM code and checkpoints: [Hazy Research](https://github.com/HazyResearch/ncm). 
 WMT14, XQuAD, TinyStories and Tiny Shakespeare. Parts of the code, documentation and report were
 written with the help of an AI assistant (Claude, Anthropic); I ran every experiment, and every
 number comes from the files in `results/`.
+
+## How to cite
+
+```bibtex
+@techreport{rahmani2026ncm,
+  title       = {Next-Concept Models on a Laptop GPU: A Fair Benchmark Against Autoregressive
+                 Models, and What Their Speed Is Worth in RAG and Agents},
+  author      = {Rahmani, Aymen},
+  year        = {2026},
+  institution = {Independent learning project},
+  doi         = {10.5281/zenodo.23837502},
+  url         = {https://doi.org/10.5281/zenodo.23837502}
+}
+```
 
 ## License
 
