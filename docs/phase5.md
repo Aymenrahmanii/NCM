@@ -1,7 +1,5 @@
 # Phase 5: NCM inside RAG and agents
 
-> Draft written with Claude. Rewrite it in your own words.
-
 Code: `src/ncm_lab/rag/`, `src/ncm_lab/agents/`. Results: `results/phase5_*`.
 
 ## Stack

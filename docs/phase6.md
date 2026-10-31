@@ -1,7 +1,5 @@
 # Phase 6: production layer
 
-> Draft written with Claude. Rewrite it in your own words.
-
 The model stays experimental; the service around it is built the way teams build services.
 
 ## What is where

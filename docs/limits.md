@@ -1,7 +1,7 @@
 # Limits suite: where NCM wins and loses
 
-> Draft written with Claude. The predictions below are suggestions: **edit them into your own,
-> then commit before running anything**, so the git history shows they came first.
+> The predictions below were committed before any experiment was run (see the git history),
+> then graded against the results in the last section.
 
 Phases 3–5 answered "is NCM faster, at what quality, and does it help RAG and agents?" on one
 operating point each. This suite pushes each axis until something breaks, on the same
@@ -35,7 +35,7 @@ GPU hour is spent.
 | 7 | `llm-vs-ncm` | 150–260M specialist vs 3B general LLM on the same tasks | XSum and WMT14, 100 examples, one request at a time, end-to-end latency | LLM is zero-shot and 4-bit quantized; specialists were trained on these tasks |
 | 8 | `agent-reliability` | How reliably does the LLM drive the NCM tools? | the six Phase 5 tasks, 10 runs at temperature 0.7 + 1 at 0 | counts right tools, tool errors, step-limit hits, accuracy |
 
-## Predictions (edit, then commit before running)
+## Predictions (committed before running)
 
 1. **Input length:** NCM's BLEU falls sharply once inputs pass its window (k ≥ 4, ~80+
    words) and its outputs get relatively shorter; opus-mt loses only a few BLEU.

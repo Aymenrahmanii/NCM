@@ -1,7 +1,5 @@
 # Phase 3: the official NCM checkpoints
 
-> Draft written with Claude. Rewrite it in your own words.
-
 Code: `src/ncm_lab/models/ncm.py`. Results: `results/phase3_eval.md`, `results/phase3_eval.csv`.
 
 ```python

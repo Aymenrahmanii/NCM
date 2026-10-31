@@ -30,3 +30,6 @@ paper/*.bbl
 paper/*.blg
 paper/main.pdf
 paper/arxiv.tar.gz
+
+# Run logs
+results/*.log

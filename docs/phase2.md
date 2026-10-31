@@ -1,7 +1,5 @@
 # Phase 2: a toy NCM from scratch
 
-> Draft written with Claude. Rewrite it in your own words: explaining it yourself is the test.
-
 Code: `src/ncm_lab/toy_ncm/`. Results: `results/phase2_*`.
 
 ## The idea in one paragraph

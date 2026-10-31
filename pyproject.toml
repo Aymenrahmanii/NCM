@@ -5,9 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ncm-lab"
 version = "0.1.0"
-description = "Learning Next-Concept Modeling: toy model, benchmarks, RAG/agents, production service"
+description = "Benchmarking Next-Concept Models against autoregressive models and an LLM on a laptop GPU"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [{ name = "Aymen Rahmani" }]
+keywords = ["next-concept modeling", "non-autoregressive generation", "benchmark", "llm", "rag", "agents"]
 # Install PyTorch separately with the CUDA build first (see README).
 dependencies = [
     "numpy",
@@ -35,6 +37,10 @@ dependencies = [
     "prometheus-client",
     "httpx",
 ]
+
+[project.urls]
+Repository = "https://github.com/Aymenrahmanii/NCM"
+Report = "https://github.com/Aymenrahmanii/NCM/blob/main/paper/ncm-limits-report.pdf"
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "pre-commit"]
