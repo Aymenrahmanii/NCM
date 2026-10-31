@@ -58,8 +58,7 @@ GPU hour is spent.
 ## Results (RTX 3050 6 GB, fp16; run on 2026-10-30)
 
 Full tables: [`results/limits_summary.md`](../results/limits_summary.md). Charts:
-`results/limits_*.png`. `llm-vs-ncm` and `agent-reliability` did not run (Ollama was not
-up), and `sudoku-stress` ran without its LLM rows.
+`results/limits_*.png`. The three Ollama experiments were run on 2026-10-31.
 
 | # | prediction | verdict |
 |---|---|---|
@@ -68,9 +67,9 @@ up), and `sudoku-stress` ran without its LLM rows.
 | 3 | AR slower than NCM beyond 30–60 output tokens | **Wrong range, right idea.** Break-even at 20 (XSum) and 26 (WMT14) tokens at batch 1, but NCM's canvas ends at 48 / 64 tokens: its speed niche is 20–64 tokens, worth ≤ 2.3×. At batch 8 on XSum there is no niche at all. |
 | 4 | NCM invents numbers/names more and repeats far more | **Right.** Repetition 37.8% vs 5.4% (XSum), 36.4% vs 13.4% (WMT14); invented numbers 20.2% vs 11.4% (XSum); invented names 21.4% vs 7.4% (WMT14). The name proxy is uninformative on XSum (56% vs 51%). |
 | 5 | NCM loses more quality under noise | **Mostly wrong.** Absolute drops are similar; uppercase destroys both (NCM WMT14 BLEU 18.8 → 0.3, opus-mt 27.5 → 2.2). Relative to its lower start, NCM loses somewhat more. |
-| 6 | NCM ~84% on shuffled, drops on sparser, always answers unsolvable | **Right, and worse than predicted.** 84% hard, 85% shuffled (symmetry-invariant), but **32%** with 5 clues removed and **1%** with 15; full grid returned for 100% of unsolvable puzzles; **0% on already-solved grids** (it overwrites 7–10 given digits). The exact CPU solver: 100% in 0.6 ms. |
-| 7 | NCM 3–10× faster than qwen2.5:3b; LLM wins on BLEU | not run yet |
-| 8 | right tools in 70–90% of sampled agent runs | not run yet |
+| 6 | NCM ~84% on shuffled, drops on sparser, always answers unsolvable | **Right, and worse than predicted.** 84% hard, 85% shuffled (symmetry-invariant), but **32%** with 5 clues removed and **1%** with 15; full grid returned for 100% of unsolvable puzzles; **0% on already-solved grids** (it overwrites 7–10 given digits). The exact CPU solver: 100% in about 1 ms. qwen2.5:3b solves **0%**, never says "unsolvable", but returns already-solved grids unchanged (100%), the opposite failure to NCM's. |
+| 7 | NCM 3–10× faster than qwen2.5:3b and better on ROUGE; LLM wins on BLEU | **Mostly right.** XSum: NCM 3.7× faster (265 vs 968 ms) and better (ROUGE-L 27.6 vs 20.2). WMT14: LLM better (BLEU 21.9 vs 16.2) at only 1.4× NCM's latency (NCM's latency was likely inflated by the LLM sharing the GPU). The small AR baselines beat both on quality. |
+| 8 | right tools in 70–90% of sampled runs; failures mostly skipped calls, not bad arguments | **Wrong framing.** Failures are systematic, not random: each task behaves the same in 11/11 runs. The LLM skips the summarize step, answers the German question from memory without searching (0%), calls translate and summarize in parallel (the summarizer gets German), and miscopies the 81-digit sudoku in 11/11 runs. |
 
 Surprises worth following up:
 - The hard test puzzles inspected all have exactly 51 blanks. NCM may have learned a fixed

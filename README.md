@@ -20,6 +20,7 @@ and an agent, and serves everything through a production-style API.
 | Does the speed matter in RAG / agents? | **No.** Compressing chunks with NCM cut RAG accuracy from 87.5% to 10%; NCM translation lowered multilingual RAG accuracy (37.5% vs 67.5%) and was 2× slower in bulk; in the agent the LLM takes 91–97% of the time. |
 | Where does NCM's speed win? (limits suite) | Only single requests with **20–64-token outputs** (≤ 2.3×). Its fixed output canvas caps translations at ~23 words: BLEU 16.3 → 0.04 as inputs grow, while the AR model's rises. |
 | Failure modes (limits suite) | Repeats itself in ~37% of outputs (AR: 5–13%). The Sudoku model drops from 84% to **32%** with five clues removed, returns a grid for every unsolvable puzzle, and corrupts already-solved ones. |
+| vs a 3B general LLM (qwen2.5:3b) | NCM is 3.7× faster and better on XSum (ROUGE-L 27.6 vs 20.2) but worse on translation (BLEU 16.2 vs 21.9); small AR baselines beat both. As an agent planner the LLM fails systematically (miscopies sudokus 11/11, skips search), whatever NCM does. |
 | Toy NCM (Phase 2) | Coarse-to-fine works (reconstruction 17% → 98.7% over 6 levels); 9.3× faster than a toy AR model at batch 1, 3.0× at batch 128, but far less fluent. |
 
 Limits suite: [docs/limits.md](docs/limits.md) · Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·

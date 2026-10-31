@@ -52,7 +52,8 @@ The limits suite shows that NCM's speed niche on this GPU is narrow (outputs of
 translations at about 23 words, so BLEU falls from 16.3 to 0.04 as inputs grow while the AR
 model's rises; that NCM repeats itself 3--7$\times$ more often; and that the Sudoku model fails
 just outside its training distribution (32\% with five clues removed) and never declines an
-unsolvable puzzle.
+unsolvable puzzle. A zero-shot 3B LLM is 1.4--3.7$\times$ slower than NCM, worse on XSum
+and better on translation; inside an agent, its tool sequencing, not NCM, decides success.
 All code, outputs and per-example logs are released.
 \end{abstract}
 
@@ -278,11 +279,12 @@ signalling a problem; given an already-solved grid it overwrites 7--10 of the gi
 in the examples we inspected and returns an invalid grid every time. The hard puzzles we
 inspected all have exactly 51 blanks, suggesting the model learned a fixed amount of
 ``work'' rather than the constraint of keeping the clues (\textbf{TODO:} confirm the blank
-count over the whole set). A 40-line backtracking solver on the CPU is exact and takes
-0.6\,ms per hard puzzle, against NCM's 16\,ms per puzzle on the GPU in batches.
-qwen2.5:3b was not reachable during this run.
-\pending{rerun \texttt{python -m ncm\_lab.limits.run sudoku-stress} with Ollama running to
-add the LLM rows.}
+count over the whole set). A simple backtracking solver on the CPU is exact and takes about 1\,ms per hard puzzle, against NCM's 23--38\,ms per puzzle on the GPU in batches.
+The general LLM shows the mirror image. On 20 puzzles per set, qwen2.5:3b solves none, returns
+a full 81-digit grid only 20--45\% of the time, and never says a puzzle is unsolvable (it
+was asked to), taking 1.8--4.5\,s per puzzle; but given an already-solved grid it returns
+it unchanged every time. The LLM can copy the clues and cannot solve; NCM can solve, in
+distribution, and cannot copy the clues.
 
 \subsection{A specialist vs.\ a general LLM}
 The same 100 examples per task through NCM, the AR baseline and zero-shot qwen2.5:3b, one
@@ -290,12 +292,29 @@ request at a time, end-to-end latency.
 \limitstable{llm_vs_ncm}{\texttt{python -m ncm\_lab.limits.run llm-vs-ncm}}
 \limitsfig{llm_vs_ncm}{Quality vs.\ median latency at batch 1.}{figure from
 \texttt{llm-vs-ncm}}
-\textbf{TODO:} interpretation.
+The two tasks split. On XSum, NCM (149M) beats the 3B LLM on ROUGE-L (27.6 vs.\ 20.2) and is
+3.7$\times$ faster (265 vs.\ 968\,ms median), because XSum rewards a learned house style the
+zero-shot LLM does not imitate; the trained BART is best on both counts (31.9). On WMT14 the
+LLM beats NCM on quality (BLEU 21.9 vs.\ 16.2; chrF 51.2 vs.\ 44.7) at 1.4$\times$ NCM's
+latency, and the 74M opus-mt beats both (24.7 BLEU, 265\,ms). A 20$\times$ larger general
+model is therefore not automatically better than a small specialist, but NCM is never the
+best of the three. Caveat: NCM's WMT14 latency in this run (377\,ms median, 1334\,ms p95) is
+higher than in the batch sweep (232\,ms), most likely because the LLM stayed resident on the
+same 6\,GB GPU after the XSum part; the LLM is also 4-bit quantized.
 
 \subsection{Agent reliability}
 Each Phase 5 task runs 10 times at temperature 0.7 (and once at 0).
 \limitstable{agent_reliability}{\texttt{python -m ncm\_lab.limits.run agent-reliability}}
-\textbf{TODO:} interpretation.
+The agent's failures are systematic, not random: every task behaves the same in all 11
+runs, so sampling does not rescue it. Lookups work (search: 100\%; two questions: 90\% at
+temperature 0.7). But in every run the LLM (i) skips the summarization step it was asked
+for (accuracy is unaffected, as the answer is in the passage); (ii) translates the German
+question and then answers from memory without searching, producing a confident, wrong
+answer (0\%); (iii) calls the translator and the summarizer \emph{in parallel} in a single
+turn, so the English-only summarizer receives German and the final answer is useless; and
+(iv) miscopies the 81-digit Sudoku (e.g.\ 83 cells) in 11 of 11 runs, which the tool rejects.
+None of these failures involves NCM's speed or quality: with a 3B planner, the bottleneck of
+a tool-using pipeline is the planner's ability to sequence tools and copy arguments.
 
 \section{Discussion}
 On a laptop GPU and short outputs, NCM's parallel decoding buys predictable single-request
@@ -309,7 +328,10 @@ The limits suite sharpens this. NCM's real speed niche on this GPU is single
 requests with outputs of roughly 20--64 tokens; below that the AR model is as fast, above it
 NCM cannot write at all. Its fixed canvas also explains its failure modes: long inputs are
 compressed into $\sim$23 words, and a constraint solver trained on puzzles with a fixed
-number of blanks does not respect the clues once that number changes.
+number of blanks does not respect the clues once that number changes. Against a 3B general LLM, NCM is
+faster and better at a narrow, style-specific task (XSum) and worse at a general one
+(translation), and the LLM's own limits (copying long digit strings, sequencing tools)
+dominate any pipeline that uses NCM as a tool.
 
 \section{Limitations}
 One GPU and one machine; results on an H100 or with larger batches may differ. Baselines are
