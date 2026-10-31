@@ -277,10 +277,10 @@ training distribution: 32\% with five clues removed and 1\% with fifteen, althou
 puzzles are \emph{easier} to satisfy (any valid completion counts) and the exact solver
 completes 100\% and 99\%. Given an unsolvable puzzle it always returns a full grid, never
 signalling a problem; given an already-solved grid it overwrites 7--10 of the given digits
-in the examples we inspected and returns an invalid grid every time. The hard puzzles we
-inspected all have exactly 51 blanks, suggesting the model learned a fixed amount of
-``work'' rather than the constraint of keeping the clues (\textbf{TODO:} confirm the blank
-count over the whole set). A simple backtracking solver on the CPU is exact and takes about 1\,ms per hard puzzle, against NCM's 23--38\,ms per puzzle on the GPU in batches.
+in the examples we inspected and returns an invalid grid every time. Every puzzle in the
+hard test set has exactly 51 blanks, which suggests the model learned a fixed amount of
+``work'' rather than the constraint of keeping the clues: removing clues or giving it none
+to fill moves the input outside anything it has seen. A simple backtracking solver on the CPU is exact and takes about 1\,ms per hard puzzle, against NCM's 23--38\,ms per puzzle on the GPU in batches.
 The general LLM shows the mirror image. On 20 puzzles per set, qwen2.5:3b solves none, returns
 a full 81-digit grid only 20--45\% of the time, and never says a puzzle is unsolvable (it
 was asked to), taking 1.8--4.5\,s per puzzle; but given an already-solved grid it returns

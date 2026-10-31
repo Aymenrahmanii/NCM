@@ -72,7 +72,8 @@ Full tables: [`results/limits_summary.md`](../results/limits_summary.md). Charts
 | 8 | right tools in 70–90% of sampled runs; failures mostly skipped calls, not bad arguments | **Wrong framing.** Failures are systematic, not random: each task behaves the same in 11/11 runs. The LLM skips the summarize step, answers the German question from memory without searching (0%), calls translate and summarize in parallel (the summarizer gets German), and miscopies the 81-digit sudoku in 11/11 runs. |
 
 Surprises worth following up:
-- The hard test puzzles inspected all have exactly 51 blanks. NCM may have learned a fixed
-  amount of change rather than "keep the clues"; check the blank count over all puzzles.
+- Every puzzle in the hard test set has exactly 51 blanks (checked over the whole file). NCM
+  seems to have learned a fixed amount of change rather than "keep the clues", which explains
+  the collapse with fewer clues and the corrupted already-solved grids.
 - Batch-1 times moved by up to 25% between this run and Phase 4 (e.g. opus-mt 203 vs 283 ms):
   on a WSL laptop, batch-1 differences of that size are noise, so read batch 1 as a tie.
