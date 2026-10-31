@@ -31,13 +31,16 @@ query-aware compressor, or an LLM where prompt tokens are expensive (a large hos
 
 ## Use case 2: German documents, English questions
 
-The 240 German paragraphs (1,372 sentences) are translated sentence by sentence, then indexed.
+The 240 German paragraphs (about 1,260 sentences) are translated sentence by sentence, then indexed.
 
 | documents indexed | translation speed (batch 32) | BLEU vs English originals | RAG accuracy |
 |---|---|---|---|
 | English originals (upper bound) | – | – | 87.5% |
-| translated by NCM WMT14 | 20 sentences/s (68 s) | 30.8 | 37.5% |
-| translated by opus-mt-de-en (AR) | **40 sentences/s** (35 s) | **46.4** | **67.5%** |
+| translated by NCM WMT14 | 18.6 sentences/s (68 s) | 30.8 | 40.0% |
+| translated by opus-mt-de-en (AR) | **34.9 sentences/s** (36 s) | **46.6** | **70.0%** |
+
+Re-run on 2026-10-31 with a sentence splitter that no longer splits German ordinals and
+abbreviations ("am 3. Oktober", "z. B."); the first run gave 37.5% (NCM) and 67.5% (opus-mt).
 
 Bulk indexing is a large-batch job, which is exactly where NCM is slower (Phase 4). Its
 translations also **hallucinate names**: "Luthers Schriften" (Luther's writings) came back
