@@ -1,10 +1,7 @@
 % Build: bash paper/build.sh   (pdflatex + bibtex; tables come from python -m ncm\_lab.limits.report)
 %
-% DRAFT written with Claude from the numbers in results/. Before posting anywhere:
-%   - rewrite it in your own words and check every claim against results/;
-%   - run the limits suite and replace every red "pending" box;
-%   - keep the AI-assistance statement (arXiv and most venues require disclosure;
-%     an AI tool cannot be an author).
+% Draft written with Claude from the numbers in results/; every limits experiment is filled
+% in. Before posting, read it through and reword anything that does not sound like you.
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage[T1]{fontenc}
@@ -23,8 +20,8 @@
 \title{Next-Concept Models on a Laptop GPU:\\
 A Fair Benchmark Against Autoregressive Models,\\
 and What Their Speed Is Worth in RAG and Agents}
-\author{TODO: your name\\\small TODO: affiliation / independent researcher\\\small
-\url{https://github.com/Aymenrahmanii/NCM}}
+\author{Aymen Rahmani\\\small Final-year Data Science Engineering student\\\small
+Independent learning project\quad\url{https://github.com/Aymenrahmanii/NCM}}
 \date{}
 
 \begin{document}
@@ -75,8 +72,9 @@ and increasingly use small models as tools inside retrieval-augmented generation
   \item Where are the limits: input and output length, batch size, faithfulness, robustness,
         generalization, and comparison with a general-purpose LLM?
 \end{enumerate}
-Our contribution is an independent, fully reproducible evaluation on one commodity GPU,
-with predictions written down before each benchmark was run and reported as right or wrong.
+This is a personal learning project, not a new method: its contribution is an
+independent, fully reproducible evaluation on one commodity GPU, with predictions written
+down before each benchmark was run and reported as right or wrong.
 
 \section{Background: Next-Concept Modeling}
 NCM uses a multiscale VQ-VAE tokenizer that encodes a text sequence into $L$ levels of
@@ -348,10 +346,11 @@ Code, configuration, every output and per-example log are at
 recreates every number; the service, tests and CI run without a GPU using stand-in models.
 
 \section*{Use of AI assistance}
-\textbf{TODO, keep and adapt:} Parts of the code, documentation and a first draft of this
-paper were written with the help of an AI assistant (Claude, Anthropic). All experiments
-were run, and all results checked, by the author, who takes full responsibility for the
-content.
+Parts of the code, the documentation, the predictions for the limits suite
+(Section~\ref{sec:limits}) and a first draft of this report were written with the help of an
+AI assistant (Claude, Anthropic). All experiments were run by the author on a personal laptop,
+every number is taken from the result files in the repository, and the author takes full
+responsibility for the content.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
