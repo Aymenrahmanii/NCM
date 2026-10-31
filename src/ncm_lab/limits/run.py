@@ -9,6 +9,8 @@
 import argparse
 import importlib
 
+from .common import free_gpu
+
 # name -> (module, needs Ollama, default n, what it answers)
 EXPERIMENTS = {
     "faithfulness": ("faithfulness", False, 500,
@@ -52,15 +54,24 @@ def main() -> None:
     if unknown:
         raise SystemExit(f"unknown experiment(s): {unknown}; see --list")
 
+    failed = []
     for name in names:
         module, _, n, what = EXPERIMENTS[name]
         print(f"===== {name}: {what}", flush=True)
-        importlib.import_module(f"ncm_lab.limits.{module}").main(n=args.n or n,
-                                                                 precision=args.precision)
+        try:  # one failure (e.g. Ollama not running) must not lose the other experiments
+            importlib.import_module(f"ncm_lab.limits.{module}").main(n=args.n or n,
+                                                                     precision=args.precision)
+        except (Exception, SystemExit) as e:
+            print(f"!!!!! {name} failed: {type(e).__name__}: {e}", flush=True)
+            failed.append(name)
+            free_gpu()
     if not args.no_report:
         from .report import main as report
 
         report()
+    if failed:
+        raise SystemExit(f"failed: {' '.join(failed)}; rerun with: "
+                         f"python -m ncm_lab.limits.run {' '.join(failed)}")
 
 
 if __name__ == "__main__":

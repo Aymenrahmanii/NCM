@@ -1,0 +1,45 @@
+\begin{table}[t]
+\centering\small
+\caption{Throughput and peak GPU memory by batch size (RTX 3050 6\,GB, fp16).}
+\label{tab:batch_sweep}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{llrrrrr}
+\toprule
+task & model & batch\_size & examples\_per\_s & ms\_per\_batch & peak\_MB & oom \\
+\midrule
+xsum & NCM (xsum) & 1 & 3.99 & 250.7 & 1017 & False \\
+xsum & NCM (xsum) & 2 & 5.43 & 368.6 & 1095 & False \\
+xsum & NCM (xsum) & 4 & 5.92 & 675.6 & 1254 & False \\
+xsum & NCM (xsum) & 8 & 6.42 & 1246.2 & 1565 & False \\
+xsum & NCM (xsum) & 16 & 6.67 & 2399.7 & 2148 & False \\
+xsum & NCM (xsum) & 32 & 6.34 & 5051.0 & 2740 & False \\
+xsum & NCM (xsum) & 64 & 4.57 & 14003.1 & 4723 & False \\
+xsum & NCM (xsum) & 128 & 2.17 & 59100.6 & 6779 & False \\
+xsum & bart-base-xsum & 1 & 4.25 & 235.6 & 295 & False \\
+xsum & bart-base-xsum & 2 & 6.78 & 294.8 & 306 & False \\
+xsum & bart-base-xsum & 4 & 12.38 & 323.2 & 329 & False \\
+xsum & bart-base-xsum & 8 & 23.29 & 343.5 & 374 & False \\
+xsum & bart-base-xsum & 16 & 42.85 & 373.4 & 464 & False \\
+xsum & bart-base-xsum & 32 & 64.47 & 496.3 & 644 & False \\
+xsum & bart-base-xsum & 64 & 88.3 & 724.8 & 1005 & False \\
+xsum & bart-base-xsum & 128 & 98.26 & 1302.7 & 1727 & False \\
+wmt14 & NCM (wmt14) & 1 & 4.3 & 232.5 & 1540 & False \\
+wmt14 & NCM (wmt14) & 2 & 8.32 & 240.3 & 1611 & False \\
+wmt14 & NCM (wmt14) & 4 & 15.75 & 254.0 & 1751 & False \\
+wmt14 & NCM (wmt14) & 8 & 20.46 & 391.0 & 2045 & False \\
+wmt14 & NCM (wmt14) & 16 & 25.7 & 622.6 & 2583 & False \\
+wmt14 & NCM (wmt14) & 32 & 27.76 & 1152.9 & 3630 & False \\
+wmt14 & NCM (wmt14) & 64 & 25.56 & 2504.0 & 5135 & False \\
+wmt14 & NCM (wmt14) & 128 & 24.24 & 5280.3 & 9442 & False \\
+wmt14 & opus-mt-de-en & 1 & 4.92 & 203.4 & 154 & False \\
+wmt14 & opus-mt-de-en & 2 & 5.98 & 334.7 & 156 & False \\
+wmt14 & opus-mt-de-en & 4 & 9.26 & 431.8 & 161 & False \\
+wmt14 & opus-mt-de-en & 8 & 18.79 & 425.7 & 172 & False \\
+wmt14 & opus-mt-de-en & 16 & 31.05 & 515.2 & 193 & False \\
+wmt14 & opus-mt-de-en & 32 & 58.48 & 547.2 & 236 & False \\
+wmt14 & opus-mt-de-en & 64 & 97.43 & 656.9 & 316 & False \\
+wmt14 & opus-mt-de-en & 128 & 196.31 & 652.0 & 482 & False \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

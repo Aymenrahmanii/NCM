@@ -18,9 +18,11 @@ and an agent, and serves everything through a production-style API.
 | At what quality? | Matches the paper (XSum ROUGE-L 27.8 vs 28.0; Sudoku-hard 84.5% vs 86.1%), but **below pretrained AR models**: ROUGE-L 27.8 vs 33.5, BLEU 20.0 vs 30.8. |
 | What does "31×" mean? | NCM vs a **diffusion** LM (128+ steps) on an H100 with 1024-token outputs, not vs GPT-style AR models. |
 | Does the speed matter in RAG / agents? | **No.** Compressing chunks with NCM cut RAG accuracy from 87.5% to 10%; NCM translation lowered multilingual RAG accuracy (37.5% vs 67.5%) and was 2× slower in bulk; in the agent the LLM takes 91–97% of the time. |
+| Where does NCM's speed win? (limits suite) | Only single requests with **20–64-token outputs** (≤ 2.3×). Its fixed output canvas caps translations at ~23 words: BLEU 16.3 → 0.04 as inputs grow, while the AR model's rises. |
+| Failure modes (limits suite) | Repeats itself in ~37% of outputs (AR: 5–13%). The Sudoku model drops from 84% to **32%** with five clues removed, returns a grid for every unsolvable puzzle, and corrupts already-solved ones. |
 | Toy NCM (Phase 2) | Coarse-to-fine works (reconstruction 17% → 98.7% over 6 levels); 9.3× faster than a toy AR model at batch 1, 3.0× at batch 128, but far less fluent. |
 
-Limits suite (in progress): [docs/limits.md](docs/limits.md) · Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
+Limits suite: [docs/limits.md](docs/limits.md) · Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 [Phase 4](docs/phase4-results.md) · [Phase 5](docs/phase5.md) · [Phase 6](docs/phase6.md)
 
 ![XSum benchmark](results/phase4_xsum_fp16.png)

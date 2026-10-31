@@ -1,0 +1,37 @@
+\begin{table}[t]
+\centering\small
+\caption{Quality on perturbed inputs and the drop relative to clean input.}
+\label{tab:robustness}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{llrrrr}
+\toprule
+task & model & perturbation & rougeL & bleu & drop\_vs\_clean \\
+\midrule
+xsum & NCM (xsum) & clean & 27.53 &  & 0.0 \\
+xsum & NCM (xsum) & typos\_10pct & 27.47 &  & 0.06 \\
+xsum & NCM (xsum) & typos\_30pct & 24.28 &  & 3.25 \\
+xsum & NCM (xsum) & lowercase & 22.64 &  & 4.89 \\
+xsum & NCM (xsum) & uppercase & 5.12 &  & 22.41 \\
+xsum & NCM (xsum) & no\_punctuation & 21.21 &  & 6.32 \\
+xsum & bart-base-xsum & clean & 32.69 &  & 0.0 \\
+xsum & bart-base-xsum & typos\_10pct & 31.83 &  & 0.86 \\
+xsum & bart-base-xsum & typos\_30pct & 29.34 &  & 3.35 \\
+xsum & bart-base-xsum & lowercase & 28.42 &  & 4.27 \\
+xsum & bart-base-xsum & uppercase & 13.14 &  & 19.55 \\
+xsum & bart-base-xsum & no\_punctuation & 29.29 &  & 3.4 \\
+wmt14 & NCM (wmt14) & clean &  & 18.76 & 0.0 \\
+wmt14 & NCM (wmt14) & typos\_10pct &  & 15.76 & 3.0 \\
+wmt14 & NCM (wmt14) & typos\_30pct &  & 14.11 & 4.65 \\
+wmt14 & NCM (wmt14) & lowercase &  & 12.94 & 5.82 \\
+wmt14 & NCM (wmt14) & uppercase &  & 0.28 & 18.48 \\
+wmt14 & NCM (wmt14) & no\_punctuation &  & 11.84 & 6.92 \\
+wmt14 & opus-mt-de-en & clean &  & 27.5 & 0.0 \\
+wmt14 & opus-mt-de-en & typos\_10pct &  & 24.75 & 2.75 \\
+wmt14 & opus-mt-de-en & typos\_30pct &  & 21.74 & 5.76 \\
+wmt14 & opus-mt-de-en & lowercase &  & 21.58 & 5.92 \\
+wmt14 & opus-mt-de-en & uppercase &  & 2.21 & 25.29 \\
+wmt14 & opus-mt-de-en & no\_punctuation &  & 20.59 & 6.91 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

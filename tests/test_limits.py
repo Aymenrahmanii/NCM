@@ -64,7 +64,7 @@ def test_crossover_finds_first_batch_where_b_is_faster():
             for m, bs, tp in [("NCM", 1, 4), ("AR", 1, 3), ("NCM", 8, 5), ("AR", 8, 19),
                               ("NCM", 32, 5), ("AR", 32, 43)]]
     assert batch_sweep.crossover(rows, "NCM", "AR") == 8
-    assert batch_sweep.crossover(rows, "AR", "NCM") == 1
+    assert batch_sweep.crossover(rows, "AR", "NCM") is None  # NCM only wins at batch 1
 
 
 # ---- 3. output length ------------------------------------------------------------------
@@ -211,3 +211,23 @@ def test_report_builds_summary_charts_and_latex(tmp_path):
     assert (tmp_path / "limits_batch_sweep.png").exists()
     assert (tmp_path / "limits_llm_vs_ncm.png").exists()
     assert "\\begin{tabular}" in (tmp_path / "tables" / "limits_batch_sweep.tex").read_text()
+
+
+def test_runner_continues_after_a_failed_experiment(monkeypatch, capsys):
+    import sys
+    import types
+
+    import pytest
+
+    from ncm_lab.limits import run
+
+    ran = []
+    ok = types.SimpleNamespace(main=lambda n, precision: ran.append("ok"))
+    bad = types.SimpleNamespace(main=lambda n, precision: sys.exit("Ollama is not reachable"))
+    modules = {"ncm_lab.limits.faithfulness": bad, "ncm_lab.limits.batch_sweep": ok}
+    monkeypatch.setattr(run.importlib, "import_module", modules.__getitem__)
+    monkeypatch.setattr(sys, "argv", ["run", "faithfulness", "batch-sweep", "--no-report"])
+    with pytest.raises(SystemExit, match="failed: faithfulness"):
+        run.main()
+    assert ran == ["ok"]
+    assert "faithfulness failed" in capsys.readouterr().out

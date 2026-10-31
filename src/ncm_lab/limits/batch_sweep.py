@@ -37,13 +37,17 @@ def sweep(model, label: str, task: str, inputs: list, batch_sizes=BATCH_SIZES,
 
 
 def crossover(rows: list[dict], a: str, b: str) -> int | None:
-    """Smallest batch size where model b's throughput exceeds model a's."""
+    """Smallest batch size from which model b's throughput beats model a's at every larger
+    batch size too (a lone win at batch 1 followed by losses is not a crossover)."""
     tp = {(r["model"], int(r["batch_size"])): float(r["examples_per_s"])
           for r in rows if str(r.get("oom")) == "False"}  # rows from sweep() or a CSV
-    for bs in sorted({k[1] for k in tp}):
-        if (a, bs) in tp and (b, bs) in tp and tp[(b, bs)] > tp[(a, bs)]:
-            return bs
-    return None
+    shared = sorted(bs for m, bs in tp if m == a and (b, bs) in tp)
+    found = None
+    for bs in reversed(shared):
+        if tp[(b, bs)] <= tp[(a, bs)]:
+            break
+        found = bs
+    return found
 
 
 def main(n: int = 128, precision: str = "fp16") -> None:

@@ -93,9 +93,10 @@ def tex_table(rows: list[dict], cols: list[str], caption: str, label: str) -> st
     esc = lambda s: str(s).replace("_", r"\_").replace("%", r"\%").replace("&", r"\&")  # noqa
     body = "\n".join(" & ".join(esc(r.get(c, "")) for c in cols) + r" \\" for r in rows)
     return (f"\\begin{{table}}[t]\n\\centering\\small\n\\caption{{{caption}}}\n"
-            f"\\label{{{label}}}\n\\begin{{tabular}}{{{'l' * 2 + 'r' * (len(cols) - 2)}}}\n"
+            f"\\label{{{label}}}\n\\begin{{adjustbox}}{{max width=\\linewidth}}\n"
+            f"\\begin{{tabular}}{{{'l' * 2 + 'r' * (len(cols) - 2)}}}\n"
             f"\\toprule\n{' & '.join(esc(c) for c in cols)} \\\\\n\\midrule\n{body}\n"
-            "\\bottomrule\n\\end{tabular}\n\\end{table}\n")
+            "\\bottomrule\n\\end{tabular}\n\\end{adjustbox}\n\\end{table}\n")
 
 
 # ---- one section per experiment: (title, rows, columns, caption, chart function) ----------
@@ -119,19 +120,35 @@ def chart_batch_sweep(rows, results):
 
 
 def chart_output_length(rows, results):
+    from .output_length import fit_line
+
     fig, axes = plt.subplots(1, 2, figsize=(10, 3.8))
     for ax, task in zip(axes, ("xsum", "wmt14")):
         sub = [r for r in rows if r["task"] == task and r["batch_size"] == "1"]
-        ar = [(int(r["output_tokens"]), num(r["ms_p50"])) for r in sub if r["model"] != "NCM"]
+        ar_all = [(int(r["output_tokens"]), num(r["ms_p50"])) for r in sub
+                  if r["model"] != "NCM"]
+        ar = [(x, y) for x, y in ar_all if x <= 128]  # zoom: the niche is short outputs
         if ar:
             line(ax, *zip(*ar), next(r["model"] for r in sub if r["model"] != "NCM"))
         ncm = [r for r in sub if r["model"] == "NCM"]
         if ncm:
             color, _ = STYLE["ncm"]
-            ax.axhline(num(ncm[0]["ms_p50"]), color=color, linewidth=2, linestyle="--")
-            ax.annotate("NCM: same cost for any output up to its canvas",
-                        (ax.get_xlim()[1], num(ncm[0]["ms_p50"])), textcoords="offset points",
-                        xytext=(-4, -12), ha="right", fontsize=8, color=INK)
+            ms, canvas = num(ncm[0]["ms_p50"]), int(ncm[0]["output_tokens"])
+            # NCM cannot write past its canvas, so its line stops there
+            ax.plot([0, canvas], [ms, ms], color=color, linewidth=2, linestyle="--")
+            ax.plot([canvas], [ms], color=color, marker="o", markersize=6)
+            ax.annotate(f"NCM: same cost up to its\n{canvas}-token canvas, then cannot go on",
+                        (canvas, ms), textcoords="offset points", xytext=(6, -22),
+                        fontsize=8, color=INK)
+            if len(ar_all) >= 2:  # same fit as limits_output_length_breakeven.csv
+                a, b = fit_line([(float(x), y) for x, y in ar_all])
+                even = (ms - a) / b
+                if 0 < even < canvas:  # the window where NCM is faster
+                    ax.axvspan(even, canvas, color=color, alpha=0.08, linewidth=0)
+                    ax.annotate(f"NCM faster:\n{even:.0f}-{canvas} tokens", (even, 1),
+                                xycoords=("data", "axes fraction"), textcoords="offset points",
+                                xytext=(3, -26), fontsize=8, color=INK)
+        ax.set_xlim(0, 136)
         style_axes(ax, f"{task}: latency at batch 1 vs output length", "output tokens",
                    "ms (median)")
     return save(fig, "output_length", results)

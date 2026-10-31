@@ -1,0 +1,17 @@
+\begin{table}[t]
+\centering\small
+\caption{Fitted AR latency (fixed + per-token) and the output length at which it exceeds NCM.}
+\label{tab:output_length_breakeven}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{llrrrrr}
+\toprule
+task & batch\_size & ncm\_ms & ar\_ms\_fixed & ar\_ms\_per\_token & breakeven\_tokens & ncm\_canvas\_tokens \\
+\midrule
+xsum & 1 & 209.3 & 37.7 & 8.376 & 20 & 48 \\
+xsum & 8 & 982.0 & 29.7 & 9.165 & 104 & 48 \\
+wmt14 & 1 & 219.3 & 16.8 & 7.693 & 26 & 64 \\
+wmt14 & 8 & 318.3 & -10.1 & 9.808 & 33 & 64 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}

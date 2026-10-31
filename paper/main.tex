@@ -9,16 +9,16 @@
 \usepackage[margin=1in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage{lmodern,microtype,booktabs,graphicx,amsmath,xcolor}
+\usepackage{lmodern,microtype,booktabs,graphicx,amsmath,xcolor,adjustbox}
 \usepackage[numbers]{natbib}
 \usepackage[hidelinks]{hyperref}
 
 \graphicspath{{../results/}}
 \newcommand{\pending}[1]{\par\noindent\fcolorbox{red}{red!5}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\small\textbf{Pending:} #1}}\par}
 \newcommand{\limitstable}[2]{\IfFileExists{tables/limits_#1.tex}{\input{tables/limits_#1.tex}}{\pending{#2}}}
-\newcommand{\limitsfig}[3]{\IfFileExists{../results/limits_#1.png}{%
-  \begin{figure}[t]\centering\includegraphics[width=\linewidth]{limits_#1.png}%
-  \caption{#2}\label{fig:#1}\end{figure}}{\pending{#3}}}
+\newcommand{\limitsfig}[4][1]{\IfFileExists{../results/limits_#2.png}{%
+  \begin{figure}[t]\centering\includegraphics[width=#1\linewidth]{limits_#2.png}%
+  \caption{#3}\label{fig:#2}\end{figure}}{\pending{#4}}}
 
 \title{Next-Concept Models on a Laptop GPU:\\
 A Fair Benchmark Against Autoregressive Models,\\
@@ -47,7 +47,12 @@ vs.\ 67.5\% for a small AR translator, and in a tool-calling agent the LLM takes
 the time. A further suite probes where NCM breaks or wins: input and output length, batch
 size up to out-of-memory, faithfulness, robustness, out-of-distribution Sudoku, a 3B
 general LLM, and agent reliability.
-\textbf{TODO: one sentence with the key limits-suite findings.}
+The limits suite shows that NCM's speed niche on this GPU is narrow (outputs of
+20--64 tokens at batch 1, bounded by its fixed output canvas); that the same canvas caps
+translations at about 23 words, so BLEU falls from 16.3 to 0.04 as inputs grow while the AR
+model's rises; that NCM repeats itself 3--7$\times$ more often; and that the Sudoku model fails
+just outside its training distribution (32\% with five clues removed) and never declines an
+unsolvable puzzle.
 All code, outputs and per-example logs are released.
 \end{abstract}
 
@@ -115,7 +120,7 @@ rates are 99.0\% (easy), 97.5\% (medium) and 84.5\% (hard) on 200 puzzles each. 
 1.9--2.5$\times$ faster than fp32 with the same quality. The official KV-cache generation path
 is 1.5$\times$ faster for WMT14 but drops BLEU from 20.0 to 3.8, so we do not use it.
 
-\section{NCM vs.\ same-size AR models}
+\section{NCM vs.\ same-size AR models}\label{sec:phase4}
 \begin{table}[t]\centering\small
 \caption{500 test examples per task, fp16, RTX~3050. Throughput in examples/s.}\label{tab:phase4}
 \begin{tabular}{lrrrr}
@@ -161,7 +166,7 @@ $\sim$20-word outputs, the step-count advantage mostly disappears.
 1.0--1.2$\times$), a shrinking advantage at larger batches (right, and it reverses), a larger
 advantage on XSum (wrong: XSum is NCM's worst case), and higher memory use (right).
 
-\section{NCM as a tool in RAG and agents}
+\section{NCM as a tool in RAG and agents}\label{sec:rag}
 \paragraph{Setup.} 40 XQuAD~\citep{xquad2020} questions over its 240 Wikipedia paragraphs,
 MiniLM embeddings~\citep{sbert2019} with FAISS~\citep{faiss2019}, top-3 retrieval,
 qwen2.5:3b answering. An answer is correct if a gold answer string appears in it.
@@ -194,15 +199,31 @@ Inputs are $k$ consecutive WMT14 test sentences joined together, so length grows
 controlled way and the reference stays exact; the AR model is allowed up to 400 output
 tokens so its default cap is not what is measured.
 \limitstable{input_length}{\texttt{python -m ncm\_lab.limits.run input-length}}
-\limitsfig{input_length}{BLEU vs.\ input length on WMT14 De$\to$En.}{figure from
+\limitsfig[0.62]{input_length}{BLEU vs.\ input length on WMT14 De$\to$En.}{figure from
 \texttt{input-length}}
-\textbf{TODO:} interpretation.
+NCM's BLEU falls from 16.3 for single sentences to 10.1 for pairs, 2.6 for triples and
+0.04 for eight sentences, while opus-mt \emph{improves} from 24.7 to 31.5 (more context) and
+only dips to 29.7 at eight. The cause is not mainly the 96-token input window: at $k=2$, 85\%
+of inputs still fit in it, yet BLEU has already dropped by 38\%. It is the fixed output
+canvas: NCM writes 18--25 words whatever the input (length ratio 0.91 at $k=1$, 0.64 at
+$k=2$, 0.15 at $k=8$), so longer inputs are silently summarized rather than translated.
+Section~\ref{sec:rag} translated sentence by sentence for this reason.
 
-\subsection{Batch size up to out-of-memory}
+\subsection{Batch size up to (and past) GPU memory}
 \limitstable{batch_sweep}{\texttt{python -m ncm\_lab.limits.run batch-sweep}}
-\limitsfig{batch_sweep}{Throughput vs.\ batch size; markers end where the model runs out of
-6\,GB.}{figure from \texttt{batch-sweep}}
-\textbf{TODO:} interpretation (crossover batch size per task).
+\limitsfig{batch_sweep}{Throughput vs.\ batch size. Beyond 6\,GB (NCM at batch 128) the
+driver spills into system memory instead of failing.}{figure from \texttt{batch-sweep}}
+On XSum, BART is faster at every batch size in this run (4.25 vs.\ 3.99 examples/s at
+batch 1, 10$\times$ at batch 32); NCM's throughput peaks at 6.7 examples/s at batch 16 and then
+\emph{falls}, because each extra example adds another 512-token prefix to all nine passes. On
+WMT14, with a short prefix, NCM is faster at batch 2--8 (1.7$\times$ at batch 4) and opus-mt
+takes over from batch 16 for good, reaching 8.1$\times$ NCM's throughput at batch 128.
+Neither model ran out of memory: NCM's peak allocation exceeded the 6\,GB card (6.8\,GB on
+XSum, 9.4\,GB on WMT14 at batch 128), because under WSL2 the Windows driver spills into
+shared system memory, which shows up as a throughput collapse (59\,s per XSum batch of 128)
+rather than an error. Batch-1 times differ from Section~\ref{sec:phase4} by up to 25\% (e.g.\
+opus-mt 203 vs.\ 283\,ms) on different example orders and runs, so at batch 1 the two model
+families should be read as tied.
 
 \subsection{Output length: where NCM's fixed step count pays off}
 The AR model is forced to write exactly $L$ tokens and its latency is fitted as
@@ -212,7 +233,13 @@ meaningful text, and NCM cannot write beyond its canvas.
 \limitstable{output_length_breakeven}{\texttt{python -m ncm\_lab.limits.run output-length}}
 \limitsfig{output_length}{Latency at batch 1 vs.\ output length.}{figure from
 \texttt{output-length}}
-\textbf{TODO:} interpretation.
+AR decoding costs a fixed 17--38\,ms plus 7.7--8.4\,ms per token at batch 1; NCM costs a
+constant 209--219\,ms. AR becomes slower than NCM beyond 20 output tokens (XSum) and 26
+(WMT14), but NCM's canvas holds only 48 and 64 tokens, so its speed advantage exists only
+inside a window of 20--48 and 26--64 tokens, worth at most 2.1--2.3$\times$ at the canvas
+edge. At batch 8 the window disappears on XSum (break-even 104 tokens, beyond the canvas) and
+narrows to 33--64 tokens on WMT14. The step-count advantage that drives the 31$\times$ claim
+needs long outputs, which these checkpoints cannot produce.
 
 \subsection{Faithfulness}
 Abstractive summarizers are known to hallucinate~\citep{maynez2020}. We count outputs that
@@ -220,11 +247,21 @@ contain a number or a capitalized name absent from the source (for translation: 
 source and reference), and outputs with a repeated word or bigram. These proxies over-count
 equally for every model, so we compare models rather than read absolute rates.
 \limitstable{faithfulness}{\texttt{python -m ncm\_lab.limits.run faithfulness} (CPU only)}
-\textbf{TODO:} interpretation.
+NCM repeats a word or bigram in 37.8\% of XSum summaries (BART: 5.4\%) and 36.4\% of
+translations (opus-mt: 13.4\%), consistent with parallel prediction within a level, where
+neighbouring positions cannot see each other's choice. It also introduces numbers absent
+from the source more often (XSum 20.2\% vs.\ 11.4\%; WMT14 3.8\% vs.\ 0\%) and, in
+translation, names absent from source and reference (21.4\% vs.\ 7.4\%). The name proxy is
+uninformative on XSum (56\% vs.\ 51\%), whose single-sentence style itself introduces
+entities.
 
 \subsection{Robustness to noisy input}
 \limitstable{robustness}{\texttt{python -m ncm\_lab.limits.run robustness}}
-\textbf{TODO:} interpretation.
+Both model families are brittle in the same places. Uppercase input destroys both (XSum
+ROUGE-L 27.5$\to$5.1 for NCM, 32.7$\to$13.1 for BART; WMT14 BLEU 18.8$\to$0.3 and
+27.5$\to$2.2). Lowercasing and removing punctuation cost NCM 4.9--6.9 points and the AR
+models 3.4--6.9; 10\% typos cost both little. Absolute drops are similar, so relative to its
+lower starting point NCM loses more (lowercase WMT14: $-$31\% vs.\ $-$22\%).
 
 \subsection{Sudoku out of distribution}
 NCM vs.\ an exact backtracking solver and qwen2.5:3b on: the hard test set; the same puzzles
@@ -232,7 +269,20 @@ with digits relabelled and the grid transposed (logically identical); 5 or 15 cl
 (any valid completion counts); unsolvable puzzles (a duplicate digit in a row, where the
 right answer is to say so); and already-solved grids.
 \limitstable{sudoku_stress}{\texttt{python -m ncm\_lab.limits.run sudoku-stress}}
-\textbf{TODO:} interpretation.
+NCM solves 84\% of the hard test puzzles and 85\% of the same puzzles relabelled and
+transposed, so it is invariant to these symmetries. But it collapses just outside the
+training distribution: 32\% with five clues removed and 1\% with fifteen, although these
+puzzles are \emph{easier} to satisfy (any valid completion counts) and the exact solver
+completes 100\% and 99\%. Given an unsolvable puzzle it always returns a full grid, never
+signalling a problem; given an already-solved grid it overwrites 7--10 of the given digits
+in the examples we inspected and returns an invalid grid every time. The hard puzzles we
+inspected all have exactly 51 blanks, suggesting the model learned a fixed amount of
+``work'' rather than the constraint of keeping the clues (\textbf{TODO:} confirm the blank
+count over the whole set). A 40-line backtracking solver on the CPU is exact and takes
+0.6\,ms per hard puzzle, against NCM's 16\,ms per puzzle on the GPU in batches.
+qwen2.5:3b was not reachable during this run.
+\pending{rerun \texttt{python -m ncm\_lab.limits.run sudoku-stress} with Ollama running to
+add the LLM rows.}
 
 \subsection{A specialist vs.\ a general LLM}
 The same 100 examples per task through NCM, the AR baseline and zero-shot qwen2.5:3b, one
@@ -255,7 +305,11 @@ against diffusion models, or with a cached prefix, none of which the released ta
 checkpoints exercise. As a tool in LLM pipelines, NCM's speed is dwarfed by the LLM, and
 its weaknesses (lower quality than pretrained baselines, invented entities) are exactly the
 ones RAG punishes.
-\textbf{TODO:} update with the limits-suite findings.
+The limits suite sharpens this. NCM's real speed niche on this GPU is single
+requests with outputs of roughly 20--64 tokens; below that the AR model is as fast, above it
+NCM cannot write at all. Its fixed canvas also explains its failure modes: long inputs are
+compressed into $\sim$23 words, and a constraint solver trained on puzzles with a fixed
+number of blanks does not respect the clues once that number changes.
 
 \section{Limitations}
 One GPU and one machine; results on an H100 or with larger batches may differ. Baselines are
