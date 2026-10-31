@@ -9,6 +9,7 @@ description = "Benchmarking Next-Concept Models against autoregressive models an
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Aymen Rahmani" }]
+license = { text = "MIT" }
 keywords = ["next-concept modeling", "non-autoregressive generation", "benchmark", "llm", "rag", "agents"]
 # Install PyTorch separately with the CUDA build first (see README).
 dependencies = [

@@ -4,6 +4,7 @@
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-CUDA-ee4c2c)
 ![GPU: RTX 3050 6 GB](https://img.shields.io/badge/GPU-RTX%203050%206%20GB-76b900)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 An independent study of **Next-Concept Modeling (NCM)**, a new text generation method from
 Hazy Research ([paper](https://arxiv.org/abs/2610.14162), [code](https://github.com/HazyResearch/ncm))
@@ -149,3 +150,9 @@ NCM code and checkpoints: [Hazy Research](https://github.com/HazyResearch/ncm). 
 WMT14, XQuAD, TinyStories and Tiny Shakespeare. Parts of the code, documentation and report were
 written with the help of an AI assistant (Claude, Anthropic); I ran every experiment, and every
 number comes from the files in `results/`.
+
+## License
+
+[MIT](LICENSE) for this repository's code and documentation. The official NCM code
+(`third_party/ncm`, downloaded separately), the model checkpoints and the datasets keep their own
+licenses.
