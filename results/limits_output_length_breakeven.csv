@@ -1,0 +1,5 @@
+task,batch_size,ncm_ms,ar_ms_fixed,ar_ms_per_token,breakeven_tokens,ncm_canvas_tokens
+xsum,1,218.6,-15.9,8.551,27,48
+xsum,8,1087.9,42.2,8.696,120,48
+wmt14,1,231.4,4.4,7.285,31,64
+wmt14,8,349.5,2.1,8.9,39,64

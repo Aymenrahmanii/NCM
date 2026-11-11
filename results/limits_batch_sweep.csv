@@ -1,0 +1,33 @@
+task,model,batch_size,examples,oom,examples_per_s,ms_per_batch,ms_per_example,peak_MB
+xsum,NCM (xsum),1,128,False,5.04,198.4,198.37,1017
+xsum,NCM (xsum),2,128,False,6.28,318.2,159.12,1095
+xsum,NCM (xsum),4,128,False,6.75,592.3,148.08,1254
+xsum,NCM (xsum),8,128,False,6.98,1145.8,143.22,1565
+xsum,NCM (xsum),16,128,False,7.27,2199.9,137.49,1934
+xsum,NCM (xsum),32,128,False,7.23,4425.1,138.28,3011
+xsum,NCM (xsum),64,128,False,6.1,10497.9,164.03,3860
+xsum,NCM (xsum),128,256,False,1.27,100395.8,784.34,7818
+xsum,bart-base-xsum,1,128,False,4.13,242.2,242.2,295
+xsum,bart-base-xsum,2,128,False,7.08,282.3,141.17,306
+xsum,bart-base-xsum,4,128,False,14.33,279.2,69.79,329
+xsum,bart-base-xsum,8,128,False,26.19,305.5,38.18,374
+xsum,bart-base-xsum,16,128,False,41.88,382.0,23.88,464
+xsum,bart-base-xsum,32,128,False,64.47,496.3,15.51,644
+xsum,bart-base-xsum,64,128,False,95.23,672.1,10.5,1005
+xsum,bart-base-xsum,128,256,False,97.49,1313.0,10.26,1727
+wmt14,NCM (wmt14),1,128,False,4.76,210.2,210.2,1540
+wmt14,NCM (wmt14),2,128,False,9.27,215.8,107.9,1611
+wmt14,NCM (wmt14),4,128,False,18.24,219.3,54.81,1751
+wmt14,NCM (wmt14),8,128,False,23.13,345.9,43.24,2045
+wmt14,NCM (wmt14),16,128,False,24.66,648.9,40.55,2583
+wmt14,NCM (wmt14),32,128,False,24.19,1322.6,41.33,3630
+wmt14,NCM (wmt14),64,128,False,21.77,2939.6,45.93,5135
+wmt14,NCM (wmt14),128,256,False,22.21,5763.7,45.03,9442
+wmt14,opus-mt-de-en,1,128,False,5.64,177.2,177.24,154
+wmt14,opus-mt-de-en,2,128,False,7.08,282.6,141.29,156
+wmt14,opus-mt-de-en,4,128,False,11.6,344.9,86.21,161
+wmt14,opus-mt-de-en,8,128,False,23.23,344.4,43.05,172
+wmt14,opus-mt-de-en,16,128,False,40.49,395.2,24.7,193
+wmt14,opus-mt-de-en,32,128,False,69.98,457.3,14.29,236
+wmt14,opus-mt-de-en,64,128,False,114.28,560.0,8.75,316
+wmt14,opus-mt-de-en,128,256,False,207.8,616.0,4.81,482
