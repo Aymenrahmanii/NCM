@@ -248,7 +248,7 @@ def speed(model, batch: int, reps: int, warmup: int = 3) -> dict[str, float]:
     inputs, _, _ = load_task("wmt14", batch)
     prefixes = model.prepare(inputs[:batch])
     times: dict[str, list[float]] = {"uncached": [], "cached": []}
-    for use_cache, key in ((False, "uncached"), (True, "cached")):
+    for use_cache in (False, True):
         for _ in range(warmup):
             translate(model, prefixes, use_cache)
     for _ in range(reps):
@@ -345,7 +345,8 @@ def layer_divergence(model, n: int = 16, fp_tol: float = 1e-2) -> None:
     else:
         lvl, blk, diff, scale = first
         print(
-            f"first divergence: level {lvl}, block {blk} (max abs diff {diff:.4f}, scale {scale:.2f})"
+            f"first divergence: level {lvl}, block {blk} "
+            f"(max abs diff {diff:.4f}, scale {scale:.2f})"
         )
 
 
