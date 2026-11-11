@@ -114,6 +114,12 @@ def main() -> None:
     ap.add_argument("--batch", type=int, default=1, help="items per forward pass")
     ap.add_argument("--precision", default="fp32", choices=["fp32", "fp16", "bf16"])
     ap.add_argument(
+        "--bleu",
+        type=int,
+        default=0,
+        help="corpus BLEU on this many sentences: uncached, cached, cached+pad fix",
+    )
+    ap.add_argument(
         "--pad-fix",
         action="store_true",
         help="test the proposed fix: mask prefix pads in the cached path",
@@ -121,6 +127,10 @@ def main() -> None:
     args = ap.parse_args()
 
     model = load_model("ncm", "wmt14", args.precision)
+    if args.bleu:
+        print(bleu_report(model, args.bleu))
+        free_gpu()
+        return
     if args.pad_fix:
         install_pad_fix(type(model.net))
     inputs, _, _ = load_task("wmt14", args.n)
@@ -135,6 +145,60 @@ def main() -> None:
                 f"{row['items_diverging']}/{row['items']} items diverge, first={row['first']}"
             )
     free_gpu()
+
+
+@torch.no_grad()
+def translate(model, prefixes: torch.Tensor, use_kv_cache: bool) -> list[str]:
+    """Same decoding as NCMModel.run, with the cache flag passed through."""
+    with model._autocast():
+        codes = model.net.generate(
+            None,
+            prefixes,
+            temperature=model.temperature,
+            top_k=model.top_k,
+            top_p=model.top_p,
+            cfg_scale=model.cfg_scale,
+            cfg_null_eos=model.eos,
+            use_kv_cache=use_kv_cache,
+        )
+        _, z_levels = model.tk.vqvae.vq.idx_to_zhats(codes, return_zlevels=True)
+        tokens = model._pick_tokens(model.tk.vqvae.decoder(z_levels[-1]).float())
+    return model.finish(tokens)
+
+
+def bleu_report(model, n: int) -> dict[str, object]:
+    """Corpus BLEU on n WMT14 test sentences: uncached, cached, and cached with the pad fix.
+
+    The pad fix patches the class, so the unfixed cached run comes first.
+    """
+    import sacrebleu
+
+    inputs, _, refs = load_task("wmt14", n)
+    prefixes = model.prepare(inputs)
+    chunks = [prefixes[i : i + model.batch_size] for i in range(0, len(prefixes), model.batch_size)]
+
+    def run_all(use_cache: bool) -> list[str]:
+        out: list[str] = []
+        for chunk in chunks:
+            out += translate(model, chunk, use_cache)
+        return out
+
+    results: dict[str, object] = {}
+    hyps = {}
+    hyps["uncached"] = run_all(False)
+    hyps["cached"] = run_all(True)
+    install_pad_fix(type(model.net))
+    hyps["cached+pad_fix"] = run_all(True)
+    for name, h in hyps.items():
+        results[name] = round(sacrebleu.corpus_bleu(h, [refs]).score, 2)
+    results["identical_outputs_fixed_vs_uncached"] = sum(
+        a == b for a, b in zip(hyps["uncached"], hyps["cached+pad_fix"])
+    )
+    results["identical_outputs_raw_vs_uncached"] = sum(
+        a == b for a, b in zip(hyps["uncached"], hyps["cached"])
+    )
+    results["n"] = len(refs)
+    return results
 
 
 if __name__ == "__main__":
