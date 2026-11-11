@@ -9,6 +9,7 @@ divergence is.
 """
 
 import argparse
+from pathlib import Path
 
 import torch
 
@@ -114,6 +115,18 @@ def main() -> None:
     ap.add_argument("--batch", type=int, default=1, help="items per forward pass")
     ap.add_argument("--precision", default="fp32", choices=["fp32", "fp16", "bf16"])
     ap.add_argument(
+        "--layers", action="store_true", help="layer-level divergence, cached vs uncached"
+    )
+    ap.add_argument("--profile", action="store_true", help="profile uncached vs cached at --batch")
+    ap.add_argument("--speed", action="store_true", help="time uncached vs cached+pad fix")
+    ap.add_argument("--speed-reps", type=int, default=20)
+    ap.add_argument(
+        "--compile",
+        default="none",
+        choices=["none", "default", "reduce-overhead", "cudagraphs"],
+        help="torch.compile the transformer blocks before --speed",
+    )
+    ap.add_argument(
         "--bleu",
         type=int,
         default=0,
@@ -127,6 +140,21 @@ def main() -> None:
     args = ap.parse_args()
 
     model = load_model("ncm", "wmt14", args.precision)
+    if args.layers:
+        layer_divergence(model)
+        free_gpu()
+        return
+    if args.profile:
+        profile_both(model, args.batch)
+        free_gpu()
+        return
+    if args.speed:
+        install_pad_fix(type(model.net))
+        if args.compile != "none":
+            compile_blocks(model, args.compile)
+        print(speed(model, args.batch, args.speed_reps))
+        free_gpu()
+        return
     if args.bleu:
         print(bleu_report(model, args.bleu))
         free_gpu()
@@ -189,6 +217,13 @@ def bleu_report(model, n: int) -> dict[str, object]:
     hyps["cached"] = run_all(True)
     install_pad_fix(type(model.net))
     hyps["cached+pad_fix"] = run_all(True)
+    tag = str(model.dtype).split(".")[-1]
+    out_dir = Path("results/cache_parity")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for name, h in hyps.items():
+        (out_dir / f"wmt14_{name.replace('+', '_')}_{tag}_n{n}.txt").write_text(
+            "\n".join(h) + "\n", encoding="utf-8"
+        )
     for name, h in hyps.items():
         results[name] = round(sacrebleu.corpus_bleu(h, [refs]).score, 2)
     results["identical_outputs_fixed_vs_uncached"] = sum(
@@ -199,6 +234,119 @@ def bleu_report(model, n: int) -> dict[str, object]:
     )
     results["n"] = len(refs)
     return results
+
+
+def speed(model, batch: int, reps: int, warmup: int = 3) -> dict[str, float]:
+    """Median ms per batch, uncached vs cached (with the pad fix), interleaved A,B,A,B.
+
+    Caller installs the pad fix first. Each condition runs `warmup` untimed calls,
+    then `reps` timed calls, with the GPU synchronized around the clock.
+    """
+    import statistics
+    import time
+
+    inputs, _, _ = load_task("wmt14", batch)
+    prefixes = model.prepare(inputs[:batch])
+    times: dict[str, list[float]] = {"uncached": [], "cached": []}
+    for use_cache, key in ((False, "uncached"), (True, "cached")):
+        for _ in range(warmup):
+            translate(model, prefixes, use_cache)
+    for _ in range(reps):
+        for use_cache, key in ((False, "uncached"), (True, "cached")):
+            torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            translate(model, prefixes, use_cache)
+            torch.cuda.synchronize()
+            times[key].append((time.perf_counter() - t0) * 1000)
+    out = {}
+    for key, ts in times.items():
+        out[f"{key}_median_ms"] = round(statistics.median(ts), 1)
+    out["speedup"] = round(out["uncached_median_ms"] / out["cached_median_ms"], 2)
+    out["batch"] = batch
+    out["reps"] = reps
+    return out
+
+
+def profile_both(model, batch: int, top: int = 12) -> None:
+    """Print the top ops by self CPU time for uncached and cached (pad fix) decoding."""
+    from torch.profiler import ProfilerActivity, profile
+
+    inputs, _, _ = load_task("wmt14", batch)
+    prefixes = model.prepare(inputs[:batch])
+    translate(model, prefixes, False)  # warm-up
+    for use_cache in (False, True):
+        if use_cache:
+            install_pad_fix(type(model.net))
+            translate(model, prefixes, True)
+        with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
+            translate(model, prefixes, use_cache)
+            torch.cuda.synchronize()
+        label = "cached+pad_fix" if use_cache else "uncached"
+        print(f"== {label}, batch {batch}")
+        print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=top))
+
+
+def compile_blocks(model, mode: str) -> None:
+    """Compile each transformer block's forward (test-only; both paths call the same blocks)."""
+    for block in model.net.transformer.blocks:
+        if mode == "cudagraphs":  # CUDA graphs only: no C compiler needed
+            block.forward = torch.compile(block.forward, backend="cudagraphs")
+        else:
+            block.forward = torch.compile(block.forward, mode=mode)
+
+
+def block_outputs(model, prefixes: torch.Tensor, use_kv_cache: bool) -> list[torch.Tensor]:
+    """Every transformer block's output, in call order, as float tensors."""
+    store: list[torch.Tensor] = []
+    handles = [
+        blk.register_forward_hook(lambda m, i, o: store.append(o.detach().float()))
+        for blk in model.net.transformer.blocks
+    ]
+    try:
+        codes_per_level(model, prefixes, use_kv_cache)
+    finally:
+        for h in handles:
+            h.remove()
+    return store
+
+
+def layer_divergence(model, n: int = 16, fp_tol: float = 1e-2) -> None:
+    """Find the first item whose codes differ (fp16), then the first layer where activations do."""
+    inputs, _, _ = load_task("wmt14", n)
+    prefixes = model.prepare(inputs[:n])
+    eager_codes = codes_per_level(model, prefixes, False)
+    install_pad_fix(type(model.net))
+    cached_codes = codes_per_level(model, prefixes, True)
+    differ = torch.zeros(n, dtype=torch.bool, device=prefixes.device)
+    for a, b in zip(eager_codes, cached_codes):
+        differ |= (a != b).any(dim=1)
+    if not differ.any():
+        print(f"no codes differ among the first {n} items")
+        return
+    item = int(differ.nonzero()[0])
+    print(f"item {item} differs; {int(differ.sum())}/{n} items differ in this batch")
+
+    eager = block_outputs(model, prefixes, False)
+    cached = block_outputs(model, prefixes, True)
+    n_blocks = len(model.net.transformer.blocks)
+    n_levels = len(model.net.levels) - 1
+    # the prelude passes differ between the paths; the level calls are the last ones
+    eager, cached = eager[-n_levels * n_blocks :], cached[-n_levels * n_blocks :]
+    P = model.net.prefix_len
+    first = None
+    for call, (e, c) in enumerate(zip(eager, cached)):
+        lvl, blk = divmod(call, n_blocks)
+        diff = (e[item, P:] - c[item]).abs().max().item()
+        scale = e[item, P:].abs().max().item()
+        if first is None and diff > fp_tol * max(scale, 1.0):
+            first = (lvl + 1, blk, diff, scale)
+    if first is None:
+        print("activations agree within tolerance at every level and block")
+    else:
+        lvl, blk, diff, scale = first
+        print(
+            f"first divergence: level {lvl}, block {blk} (max abs diff {diff:.4f}, scale {scale:.2f})"
+        )
 
 
 if __name__ == "__main__":
