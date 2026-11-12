@@ -2,6 +2,7 @@
 
     python -m ncm_lab.bench.run --task xsum --models ncm ar --n 500
     python -m ncm_lab.bench.run --task wmt14 --models ncm ar --n 500 --precision fp16
+    NCM_ROOT=third_party/ncm-pr5-pr4 python -m ncm_lab.bench.run --task xsum --models ncm-kv
 
 Fairness rules: same GPU, precision, examples and seed; warm-up before timing;
 torch.cuda.synchronize() around the clock; only generation (`run`) is timed, not tokenization
@@ -58,11 +59,11 @@ def score(task: str, hyps: list[str], refs: list[str]) -> dict[str, float]:
 
 
 def make_model(name: str, task: str, precision: str):
-    if name == "ncm":
+    if name in ("ncm", "ncm-kv"):  # ncm-kv needs NCM_ROOT pointing at a checkout with PR #5
         from ncm_lab.models.ncm import NCMSummarizer, NCMTranslator
 
         cls = NCMSummarizer if task == "xsum" else NCMTranslator
-        return cls(precision=precision)
+        return cls(precision=precision, kv_cache=name == "ncm-kv")
     if name == "ar":
         from ncm_lab.models.baselines import HFSeq2Seq
 
@@ -138,7 +139,7 @@ def main() -> None:
     for name in args.models:
         print(f"[bench] {args.task} / {name} / {args.precision}", flush=True)
         row = bench_model(name, args.task, args.precision,
-                          ncm_inputs if name == "ncm" else ar_inputs, refs)
+                          ncm_inputs if name.startswith("ncm") else ar_inputs, refs)
         print(row, flush=True)
         rows.append(row)
 

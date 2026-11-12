@@ -37,7 +37,9 @@ class NCMModel:
     task: str = ""
 
     def __init__(self, device: str = "cuda", precision: str = "fp32", batch_size: int = 16,
-                 checkpoint_dir: str | Path | None = None):
+                 checkpoint_dir: str | Path | None = None, kv_cache: bool = False):
+        # kv_cache=True is only correct with upstream's cache fix (PR #5): set NCM_ROOT to a
+        # checkout that has it. On upstream main the cached path ignores prefix padding.
         from omegaconf import OmegaConf
         from transformers import AutoTokenizer
 
@@ -49,6 +51,7 @@ class NCMModel:
         self.device = device
         self.dtype = PRECISIONS[precision]
         self.batch_size = batch_size
+        self.kv_cache = kv_cache
         self.cfg = cfg
         self.tk = VQVAETokenizer.from_config(cfg.tokenizer)
         self.tk.vqvae = self.tk.vqvae.to(device).eval()
@@ -138,7 +141,7 @@ class NCMModel:
         with self._autocast():
             codes = self.net.generate(None, x, temperature=self.temperature, top_k=self.top_k,
                                       top_p=self.top_p, cfg_scale=self.cfg_scale,
-                                      cfg_null_eos=self.eos)
+                                      cfg_null_eos=self.eos, use_kv_cache=self.kv_cache)
             _, z_levels = self.tk.vqvae.vq.idx_to_zhats(codes, return_zlevels=True)
             tokens = self._pick_tokens(self.tk.vqvae.decoder(z_levels[-1]).float())
             if not return_levels:
