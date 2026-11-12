@@ -1,0 +1,7 @@
+experiment,variant,n,accuracy,lo,hi,mcnemar_vs,p_value
+phase5_rag_multilingual,English originals (upper bound),40,0.875,0.739,0.945,,
+phase5_rag_multilingual,translated by NCM (WMT14),40,0.375,0.242,0.53,translated by opus-mt-de-en (AR) (12 vs 0 discordant),0.0005
+phase5_rag_multilingual,translated by opus-mt-de-en (AR),40,0.675,0.52,0.799,,
+phase5_rag_compression,plain RAG,40,0.875,0.739,0.945,,
+phase5_rag_compression,NCM-compressed (XSum summarizer),40,0.1,0.04,0.231,AR-compressed (BART-base XSum) (5 vs 2 discordant),0.4531
+phase5_rag_compression,AR-compressed (BART-base XSum),40,0.175,0.087,0.319,,
