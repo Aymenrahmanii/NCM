@@ -115,6 +115,41 @@ def paired_bootstrap_bleu(
     )
 
 
+def bootstrap_quantile(
+    samples: Sequence[float],
+    q: float = 0.5,
+    n_resamples: int = N_RESAMPLES,
+    seed: int = 0,
+    level: float = 0.95,
+) -> tuple[float, tuple[float, float]]:
+    """A quantile of the samples (e.g. median latency) and its bootstrap interval."""
+    x = np.asarray(samples, float)
+    if x.ndim != 1 or len(x) == 0:
+        raise ValueError("samples must be a non-empty 1-D sequence")
+    boot = np.quantile(x[_resample_indices(len(x), n_resamples, seed)], q, axis=1)
+    return float(np.quantile(x, q)), _ci(boot, level)
+
+
+def paired_ratio_of_medians(
+    samples_a: Sequence[float],
+    samples_b: Sequence[float],
+    n_resamples: int = N_RESAMPLES,
+    seed: int = 0,
+    level: float = 0.95,
+) -> tuple[float, tuple[float, float]]:
+    """median(a) / median(b) with a paired bootstrap interval.
+
+    Pairs are calls made in the same interleaved round, so drift (clock, temperature) that
+    hits both models in a round cancels out of the interval.
+    """
+    a, b = np.asarray(samples_a, float), np.asarray(samples_b, float)
+    if a.shape != b.shape or a.ndim != 1 or len(a) == 0:
+        raise ValueError("samples must be equal-length, non-empty 1-D sequences")
+    idx = _resample_indices(len(a), n_resamples, seed)
+    ratios = np.median(a[idx], axis=1) / np.median(b[idx], axis=1)
+    return float(np.median(a) / np.median(b)), _ci(ratios, level)
+
+
 def wilson_interval(successes: int, n: int, z: float = 1.959964) -> tuple[float, float]:
     """Wilson score interval for a binomial proportion."""
     if n <= 0 or not 0 <= successes <= n:

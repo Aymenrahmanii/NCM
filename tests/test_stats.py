@@ -2,7 +2,9 @@ import pytest
 import sacrebleu
 
 from ncm_lab.stats import (
+    bootstrap_quantile,
     mcnemar_exact,
+    paired_ratio_of_medians,
     paired_bootstrap_bleu,
     paired_bootstrap_mean,
     wilson_interval,
@@ -53,3 +55,19 @@ def test_mcnemar_exact():
     r = mcnemar_exact(a, b)
     assert r["only_b"] == 10 and r["p_value"] == pytest.approx(2 / 2**10)
     assert mcnemar_exact(a, a)["p_value"] == 1.0
+
+
+def test_bootstrap_quantile():
+    x = list(range(1, 102))  # median 51
+    m, (lo, hi) = bootstrap_quantile(x, 0.5, n_resamples=500)
+    assert m == 51 and lo < 51 < hi
+    assert bootstrap_quantile([5.0] * 10, 0.95, n_resamples=100) == (5.0, (5.0, 5.0))
+
+
+def test_paired_ratio_of_medians():
+    a = [2.0, 4.0, 6.0] * 20
+    b = [1.0, 2.0, 3.0] * 20
+    r, (lo, hi) = paired_ratio_of_medians(a, b, n_resamples=500)
+    assert r == 2.0 and lo == pytest.approx(2.0) and hi == pytest.approx(2.0)
+    with pytest.raises(ValueError):
+        paired_ratio_of_medians([1.0], [1.0, 2.0])

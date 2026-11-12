@@ -48,11 +48,11 @@ full table in `results/significance.md`). Raw numbers are in `results/phase4_*_f
 | peak GPU memory b=32 | 2.9 GB | 0.65 GB | 3.8 GB | 0.24 GB |
 
 What changes against the n=500 tables below: every quality gap is significant, and the
-intervals are about ±0.3 ROUGE-L and ±0.5 BLEU. At batch 1 NCM is now **level with AR on
-median latency** for both tasks; the earlier 1.2× WMT14 lead does not hold on the full set.
-NCM's p95 is still tighter. At batch 32, AR is 2.6× (WMT14) and 9.8× (XSum) faster. Batch-1
-latencies have no interval yet: the full run timed a fixed set of calls, not the plan's
-interleaved 200-call protocol.
+intervals are about ±0.3 ROUGE-L and ±0.5 BLEU. At batch 1 these single runs put NCM level
+with AR on median latency for both tasks; the earlier 1.2× WMT14 lead does not hold on the
+full set. NCM's p95 is still tighter. At batch 32, AR is 2.6× (WMT14) and 9.8× (XSum) faster.
+These latencies have no interval; the interleaved run below replaces them and finds that
+opus-mt is in fact 1.26× faster than NCM at batch 1 on WMT14.
 
 **KV cache (`results/cache_parity/`, `python -m ncm_lab.bench.cache_parity`).** The BLEU 3.8
 with `use_kv_cache=True` (see below) is a padding bug in the cached path, not a property of
@@ -98,7 +98,8 @@ uncached ones, and the log is `results/upstream_pr5/phase4_kv_run.log`.
 - **Most of the batch-32 deficit was missing caching, not the method.** WMT14 goes from
   2.6× slower than opus-mt to level with it, and is 1.7× faster at batch 8. XSum goes from
   9.8× slower than BART to 2.2× slower, and is level with it at batch 8.
-- **Batch 1 does not change** (about 4 ex/s for every model), so the tie at batch 1 stands.
+- **Batch 1 does not change** with the cache (about 4 ex/s for every model). The interleaved
+  run below refines the batch-1 comparison with AR.
 - **Memory drops below the uncached run** once PR #4 is in. So the 4.9 GB fp32 figure above
   came mostly from the leak, not from the cache.
 - **Caveat:** these are single runs, and the NCM-cache and AR rows were measured on
@@ -106,6 +107,52 @@ uncached ones, and the log is `results/upstream_pr5/phase4_kv_run.log`.
   Treat WMT14 batch 32 as a tie, not a win.
 - **The quality gap is unchanged.** NCM is still 11.3 BLEU and 5.3 ROUGE-L behind the
   pretrained AR models, and caching does not touch that.
+
+### Latency under the full protocol, interleaved (2026-11-12)
+
+`NCM_ROOT=third_party/ncm-pr5-pr4 python -m ncm_lab.bench.interleaved --task wmt14|xsum`.
+Per batch size: 20 warm-up calls per model, then 200 rounds. Each round runs NCM uncached,
+NCM + cache and AR once on the same input batch, in an order that rotates every round.
+`torch.cuda.synchronize()` brackets each call. Inputs come from the full test sets and are
+tokenized before the clock starts. Intervals are bootstrap 95% (10,000 resamples). The
+ratio interval is a paired bootstrap over rounds, so drift within a round cancels. fp16
+autocast. Files: `results/phase8_interleaved_{wmt14,xsum}{.csv,_ratios.csv,_calls.jsonl}`.
+
+Median latency in ms [95% CI] (p95):
+
+| | NCM | NCM + cache | AR |
+|---|---|---|---|
+| WMT14 b=1 | 232 [226, 236] (283) | 234 [229, 240] (290) | **185** [170, 202] (387) |
+| WMT14 b=8 | 390 [386, 393] | **261** [256, 265] | 460 [432, 474] |
+| WMT14 b=32 | 1,510 [1,504, 1,519] | 650 [648, 656] | 629 [601, 650] |
+| XSum b=1 | 241 [238, 246] (302) | 229 [224, 235] (291) | 244 [229, 256] (344) |
+| XSum b=8 | 1,561 [1,549, 1,580] | 398 [393, 402] | 409 [402, 420] |
+| XSum b=32 | 6,241 [6,215, 6,286] | 1,418 [1,411, 1,429] | **696** [684, 709] |
+
+NCM ÷ AR median latency, paired [95% CI]. Above 1 means AR is faster.
+
+| | WMT14 NCM | WMT14 + cache | XSum NCM | XSum + cache |
+|---|---|---|---|---|
+| batch 1 | 1.26 [1.14, 1.37] | 1.27 [1.15, 1.38] | 0.99 [0.94, 1.05] | 0.94 [0.89, 1.00] |
+| batch 8 | 0.85 [0.82, 0.90] | **0.57** [0.55, 0.61] | 3.82 [3.72, 3.89] | 0.97 [0.95, 0.99] |
+| batch 32 | 2.40 [2.32, 2.51] | 1.03 [1.00, 1.08] | 8.97 [8.79, 9.14] | 2.04 [2.00, 2.08] |
+
+- **Batch 1 is not a tie on WMT14.** opus-mt's median is 1.26× lower, and the interval
+  excludes 1. On XSum batch 1 is a tie: 0.99 uncached, 0.94 cached, which only just
+  excludes 1. The earlier "level at batch 1" for WMT14 came from single non-interleaved runs.
+- **NCM's tail is tighter at batch 1** on both tasks: p95 283 vs 387 ms (WMT14), 302 vs
+  344 ms (XSum). AR's p95 is about 2× its median on WMT14, because opus-mt's output length
+  varies with the input.
+- **With the cache, NCM wins only at batch 8 on WMT14** (1.8× faster). At batch 32 WMT14 is
+  a tie with AR 3% ahead at the edge of significance; XSum is level at batch 8 and 2.0×
+  behind at batch 32. That matches the single-run throughput table above (2.2×).
+- **The cache does nothing at batch 1** (WMT14 0.99 [0.96, 1.02]) and gives 1.5–2.3×
+  (WMT14) and 3.9–4.4× (XSum) at batches 8 and 32.
+- **Conditions.** The GPU ran at 66–88 °C with the SM clock between 1.2 and 1.9 GHz. The
+  rotating order spreads that drift over all three models; compare ratios, not absolute
+  times across tables or runs. The first XSum attempt stopped without an error at the start
+  of batch 32 (cause unknown; WSL had restarted by the time it was noticed), so the XSum
+  numbers are from a clean rerun.
 
 ### Summarization (XSum, 500 test articles)
 

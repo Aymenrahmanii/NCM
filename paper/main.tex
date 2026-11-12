@@ -38,7 +38,8 @@ practitioners care about: a same-size autoregressive (AR) model with a KV cache.
 6\,GB RTX~3050 laptop GPU we reproduce the official NCM checkpoints' quality (XSum ROUGE-L
 27.8 vs.\ 28.0 reported; Sudoku-hard 84.5\% vs.\ 86.1\%) and benchmark them against
 pretrained AR models of similar size under identical conditions, on the full test sets. At
-batch size 1 NCM matches the AR model's median latency and has a tighter tail. At batch
+batch size 1, in interleaved timing, NCM ties BART on XSum and is 1.26$\times$ slower than
+opus-mt on WMT14 in median latency, but has a tighter tail on both. At batch
 size 32 the official generator is 2.6--9.8$\times$ slower; with a corrected KV cache
 (upstream fix, verified here) this shrinks to parity on WMT14 and 2.2$\times$ on XSum at
 unchanged quality. NCM uses 3--16$\times$ more GPU memory, and its quality is lower
@@ -123,6 +124,8 @@ traces this to a padding bug and measures the fixed cache.
 \caption{Full test sets (XSum 11,334; WMT14 3,003), fp16, RTX~3050. ``+cache'': the official
 generator with the corrected KV cache (Section~\ref{sec:cache}). Quality intervals: paired
 bootstrap, 95\%; every NCM--AR quality gap excludes zero, NCM vs.\ NCM+cache does not.
+Latency and throughput are single runs; Table~\ref{tab:interleaved} has interleaved
+timing with intervals.
 Throughput in examples/s.}\label{tab:phase4}
 \setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{lrrrrrr}
@@ -167,8 +170,31 @@ and 97\% (XSum) are identical and quality does not move: BLEU $-0.03$ [$-0.08$, 
 ROUGE-L $+0.00$ [$-0.00$, $+0.01$]. Batch-32 throughput rises 2.6$\times$ on WMT14, to
 opus-mt's level, and 4.5$\times$ on XSum, which leaves BART 2.2$\times$ ahead. Batch 1 does not
 change, because there the GPU is launch-bound, not compute-bound. Most of the batch-32
-deficit was therefore missing caching, not the method. These cached runs are single runs on
-a different day from the AR runs, so we read WMT14 at batch 32 as a tie.
+deficit was therefore missing caching, not the method.
+
+\paragraph{Interleaved timing.} Table~\ref{tab:phase4} comes from single runs on different
+days. We re-timed all three models under one protocol: 20 warm-up calls, then 200 rounds in
+which each model runs once on the same batch, in rotating order, with
+\texttt{cuda.synchronize()} around each call. Ratio intervals are a paired bootstrap over
+rounds (Table~\ref{tab:interleaved}). The batch-1 tie holds on XSum but not on WMT14, where
+opus-mt is 1.26$\times$ faster; NCM's p95 is lower on both (283 vs.\ 387\,ms, 302 vs.\
+344\,ms). With the cache, NCM is 1.8$\times$ faster than opus-mt at batch 8 and level at
+batch 32, and 2.0$\times$ slower than BART at batch 32.
+
+\begin{table}[t]\centering\small
+\caption{NCM $\div$ AR median latency, interleaved, 200 rounds, fp16, paired bootstrap 95\%
+intervals. Above 1: AR is faster.}\label{tab:interleaved}
+\begin{tabular}{lrrrr}
+\toprule
+ & \multicolumn{2}{c}{WMT14} & \multicolumn{2}{c}{XSum}\\
+batch & NCM & +cache & NCM & +cache\\
+\midrule
+1 & 1.26 [1.14, 1.37] & 1.27 [1.15, 1.38] & 0.99 [0.94, 1.05] & 0.94 [0.89, 1.00]\\
+8 & 0.85 [0.82, 0.90] & \textbf{0.57} [0.55, 0.61] & 3.82 [3.72, 3.89] & 0.97 [0.95, 0.99]\\
+32 & 2.40 [2.32, 2.51] & 1.03 [1.00, 1.08] & 8.97 [8.79, 9.14] & 2.04 [2.00, 2.08]\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 The quality gap mixes method and pretraining: both baselines start from large-scale
 pretraining, while the NCM checkpoints are trained from scratch on the task data. The NCM
@@ -179,7 +205,7 @@ paper's matched-data AR baseline scores ROUGE-L 24.4 (NCM 28.0) and BLEU 25.2 (N
 $\sim$20-word outputs, the step-count advantage mostly disappears.
 
 \paragraph{Predictions vs.\ reality.} We predicted a 2--5$\times$ batch-1 speedup (wrong:
-1.0--1.2$\times$), a shrinking advantage at larger batches (right, and it reverses), a larger
+0.8--1.0$\times$ in interleaved timing), a shrinking advantage at larger batches (right, and it reverses), a larger
 advantage on XSum (wrong: XSum is NCM's worst case), and higher memory use (right).
 
 \section{NCM as a tool in RAG and agents}
@@ -296,8 +322,9 @@ ones RAG punishes.
 One GPU and one machine; results on an H100 or with larger batches may differ. Baselines are
 pretrained while NCM checkpoints are not, so the quality gap is not only the method's.
 Phase 4 and RAG use full test sets, but the agent has only six tasks, and the limits suite
-uses smaller samples. Batch-1 latencies come from 100 calls per model, not interleaved
-across models, and have no intervals. fp16 is autocast with fp32 weights. We did not re-measure the diffusion baseline behind the
+uses smaller samples. Only the ratios in Table~\ref{tab:interleaved} are interleaved and
+have intervals; the GPU ran at 66--88\,$^\circ$C with the SM clock between 1.2 and 1.9\,GHz,
+so absolute times vary between runs. fp16 is autocast with fp32 weights. We did not re-measure the diffusion baseline behind the
 31$\times$ claim. Faithfulness uses string proxies, not human judgment.
 
 \section{Reproducibility}

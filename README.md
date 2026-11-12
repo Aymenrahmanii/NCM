@@ -14,7 +14,7 @@ and an agent, and serves everything through a production-style API.
 
 | question | answer on an RTX 3050 |
 |---|---|
-| Is NCM faster than a same-size AR model? | **At batch 1: about the same** (~4 examples/s for all), with a tighter p95. **At batch 32:** 2.6–9.8× slower with the official generator; with the corrected KV cache (upstream PR #5), **level on WMT14** and 2.2× slower on XSum, at unchanged quality. |
+| Is NCM faster than a same-size AR model? | **At batch 1: about the same or slightly slower** (interleaved timing: tie on XSum, opus-mt 1.26× faster on WMT14), with a tighter p95. **At batch 32:** 2.6–9.8× slower with the official generator; with the corrected KV cache (upstream PR #5), **level on WMT14** and 2.2× slower on XSum, at unchanged quality. |
 | At what quality? | Matches the paper (XSum ROUGE-L 27.9 vs 28.0; Sudoku-hard 84.5% vs 86.1%), but **below pretrained AR models** on the full test sets: ROUGE-L 27.9 vs 33.3, BLEU 21.7 vs 33.1 (both gaps significant). |
 | What does "31×" mean? | NCM vs a **diffusion** LM (128+ steps) on an H100 with 1024-token outputs, not vs GPT-style AR models. |
 | Does the speed matter in RAG / agents? | **No.** On all 1,190 XQuAD questions, compressing chunks with NCM cut RAG accuracy from 73% to 7% (BART: 10%); NCM translation lowered multilingual RAG accuracy (38% vs 56%); in the agent the LLM takes 91–97% of the time. |
