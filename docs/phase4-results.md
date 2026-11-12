@@ -75,8 +75,37 @@ is a single timed pass, so there are no intervals.
 The cache removes the repeated prefix work that made XSum NCM's worst case at batch 16.
 At batch 1 it gains nothing: launch overhead dominates, not prefix compute. So the batch-1
 tie with the AR models stands, and the batch-32 deficit needs re-measuring with the cache on.
-XSum memory more than doubles with the cache. PR #4, a memory leak fix in `generate()`, may
-explain part of it; check that before quoting the memory figure.
+XSum memory more than doubles with the cache in this fp32 run, which did not include PR #4.
+
+**Phase 4 rerun with the cache on (`ncm-kv`, 2026-11-12).** Same harness, full test sets,
+fp16. Upstream code is PR #5 with PR #4 (the `generate()` memory leak fix) on top, via
+`NCM_ROOT=third_party/ncm-pr5-pr4`. Rows are in `results/phase4_*_fp16.csv` next to the
+uncached ones, and the log is `results/upstream_pr5/phase4_kv_run.log`.
+
+| | NCM uncached | **NCM + cache** | AR |
+|---|---|---|---|
+| WMT14 BLEU | 21.73 | 21.70 | 33.05 |
+| WMT14 throughput b=1 / 8 / 32 (ex/s) | 4.1 / 17.8 / 19.1 | 4.1 / **29.7** / **49.5** | 4.3 / 17.6 / 49.4 |
+| WMT14 peak memory b=32 | 3.8 GB | 3.2 GB | 0.24 GB |
+| XSum ROUGE-L | 27.94 | 27.94 | 33.26 |
+| XSum throughput b=1 / 8 / 32 (ex/s) | 4.1 / 5.4 / 5.2 | 4.0 / **21.1** / **23.1** | 4.1 / 20.5 / 50.6 |
+| XSum peak memory b=32 | 2.9 GB | 2.2 GB | 0.65 GB |
+
+- **Quality does not move.** Cached minus uncached, paired bootstrap: WMT14 BLEU −0.03
+  [−0.08, +0.03], with 2,834 of 3,003 outputs identical. XSum ROUGE-L +0.00 [−0.00, +0.01],
+  with 11,046 of 11,334 identical. The few differing outputs come from fp16 rounding; in
+  fp32 the outputs are identical.
+- **Most of the batch-32 deficit was missing caching, not the method.** WMT14 goes from
+  2.6× slower than opus-mt to level with it, and is 1.7× faster at batch 8. XSum goes from
+  9.8× slower than BART to 2.2× slower, and is level with it at batch 8.
+- **Batch 1 does not change** (about 4 ex/s for every model), so the tie at batch 1 stands.
+- **Memory drops below the uncached run** once PR #4 is in. So the 4.9 GB fp32 figure above
+  came mostly from the leak, not from the cache.
+- **Caveat:** these are single runs, and the NCM-cache and AR rows were measured on
+  different days, not interleaved. GPU at 79–83 °C with the SM clock steady at 1,492 MHz.
+  Treat WMT14 batch 32 as a tie, not a win.
+- **The quality gap is unchanged.** NCM is still 11.3 BLEU and 5.3 ROUGE-L behind the
+  pretrained AR models, and caching does not touch that.
 
 ### Summarization (XSum, 500 test articles)
 

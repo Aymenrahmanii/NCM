@@ -1,3 +1,4 @@
 task,model,model_id,precision,n,params_M,rouge1,rouge2,rougeL,avg_output_words,latency_p50_ms,latency_p95_ms,throughput_bs1,peak_MB_bs1,throughput_bs8,peak_MB_bs8,throughput_bs32,peak_MB_bs32
 xsum,ncm,hazyresearch/ncm-checkpoints/xsum,fp16,11334,148.6,34.92,12.72,27.94,20.7,242.7,277.4,4.09,1014,5.4,1567,5.19,2921
 xsum,ar,morenolq/bart-base-xsum,fp16,11334,139.4,41.31,18.01,33.26,19.4,236.2,319.6,4.11,293,20.54,376,50.61,648
+xsum,ncm-kv,hazyresearch/ncm-checkpoints/xsum,fp16,11334,148.6,34.93,12.72,27.94,20.7,244.0,312.1,4.0,955,21.07,1196,23.12,2200

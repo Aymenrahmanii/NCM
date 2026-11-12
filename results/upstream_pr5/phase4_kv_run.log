@@ -1,0 +1,17 @@
+65, 1492 MHz
+[bench] wmt14 / ncm-kv / fp16
+VQVAE, Total parameter count: 144.00M
+VQVAE, Non embedding parameter count: 85.73M
+NCP Transformer, Total parameter count: 119.96M
+NCP Transformer, Non embedding parameter count: 119.66M
+{'task': 'wmt14', 'model': 'ncm-kv', 'model_id': 'hazyresearch/ncm-checkpoints/wmt14', 'precision': 'fp16', 'n': 3003, 'params_M': 264.0, 'bleu': 21.7, 'avg_output_words': 18.5, 'latency_p50_ms': 242.6, 'latency_p95_ms': 297.2, 'throughput_bs1': 4.06, 'peak_MB_bs1': 1511, 'throughput_bs8': 29.65, 'peak_MB_bs8': 1906, 'throughput_bs32': 49.46, 'peak_MB_bs32': 3240}
+wrote results/phase4_wmt14_fp16.csv
+79, 1492 MHz
+[bench] xsum / ncm-kv / fp16
+VQVAE, Total parameter count: 60.63M
+VQVAE, Non embedding parameter count: 41.30M
+NCP Transformer, Total parameter count: 88.02M
+NCP Transformer, Non embedding parameter count: 87.71M
+{'task': 'xsum', 'model': 'ncm-kv', 'model_id': 'hazyresearch/ncm-checkpoints/xsum', 'precision': 'fp16', 'n': 11334, 'params_M': 148.6, 'rouge1': 34.93, 'rouge2': 12.72, 'rougeL': 27.94, 'avg_output_words': 20.7, 'latency_p50_ms': 244.0, 'latency_p95_ms': 312.1, 'throughput_bs1': 4.0, 'peak_MB_bs1': 955, 'throughput_bs8': 21.07, 'peak_MB_bs8': 1196, 'throughput_bs32': 23.12, 'peak_MB_bs32': 2200}
+wrote results/phase4_xsum_fp16.csv
+83, 1492 MHz
