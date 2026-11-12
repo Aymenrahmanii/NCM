@@ -37,14 +37,16 @@ model. We ask what that speed means on commodity hardware and against the baseli
 practitioners care about: a same-size autoregressive (AR) model with a KV cache. On a
 6\,GB RTX~3050 laptop GPU we reproduce the official NCM checkpoints' quality (XSum ROUGE-L
 27.8 vs.\ 28.0 reported; Sudoku-hard 84.5\% vs.\ 86.1\%) and benchmark them against
-pretrained AR models of similar size under identical conditions. At batch size 1 NCM matches
-(XSum, 268 vs.\ 274\,ms) or slightly beats (WMT14, 1.2$\times$) the AR model and has a tighter
-tail latency; at batch size 32 it is 2.3--8.7$\times$ slower and uses 5--16$\times$ more GPU
-memory, and its quality is lower (ROUGE-L 27.8 vs.\ 33.5; BLEU 20.0 vs.\ 30.8). Used as
-tools around a 3B LLM, NCM's speed does not help: compressing retrieved passages cuts RAG
-accuracy from 87.5\% to 10\%, NCM translation of a German corpus yields 37.5\% RAG accuracy
-vs.\ 67.5\% for a small AR translator, and in a tool-calling agent the LLM takes 91--97\% of
-the time. A further suite probes where NCM breaks or wins: input and output length, batch
+pretrained AR models of similar size under identical conditions, on the full test sets. At
+batch size 1 NCM matches the AR model's median latency and has a tighter tail. At batch
+size 32 the official generator is 2.6--9.8$\times$ slower; with a corrected KV cache
+(upstream fix, verified here) this shrinks to parity on WMT14 and 2.2$\times$ on XSum at
+unchanged quality. NCM uses 3--16$\times$ more GPU memory, and its quality is lower
+(ROUGE-L 27.9 vs.\ 33.3; BLEU 21.7 vs.\ 33.1). Used as tools around a 3B LLM on all 1,190
+XQuAD questions, NCM does not help: compressing retrieved passages cuts RAG accuracy from
+73\% to 7\% (BART: 10\%), NCM translation of a German corpus yields 38\% RAG accuracy vs.\
+56\% for a small AR translator, and in a tool-calling agent the LLM takes 91--97\% of the
+time. A further suite probes where NCM breaks or wins: input and output length, batch
 size up to out-of-memory, faithfulness, robustness, out-of-distribution Sudoku, a 3B
 general LLM, and agent reliability.
 \textbf{TODO: one sentence with the key limits-suite findings.}
@@ -113,23 +115,29 @@ On the first 50 test examples the official evaluation code and our wrapper agree
 27.8 (paper: 28.0 on the full test set) and WMT14 BLEU 20.0 (paper: 22.6). Sudoku solve
 rates are 99.0\% (easy), 97.5\% (medium) and 84.5\% (hard) on 200 puzzles each. fp16 is
 1.9--2.5$\times$ faster than fp32 with the same quality. The official KV-cache generation path
-is 1.5$\times$ faster for WMT14 but drops BLEU from 20.0 to 3.8, so we do not use it.
+is 1.5$\times$ faster for WMT14 but drops BLEU from 20.0 to 3.8. Section~\ref{sec:cache}
+traces this to a padding bug and measures the fixed cache.
 
 \section{NCM vs.\ same-size AR models}
 \begin{table}[t]\centering\small
-\caption{500 test examples per task, fp16, RTX~3050. Throughput in examples/s.}\label{tab:phase4}
-\begin{tabular}{lrrrr}
+\caption{Full test sets (XSum 11,334; WMT14 3,003), fp16, RTX~3050. ``+cache'': the official
+generator with the corrected KV cache (Section~\ref{sec:cache}). Quality intervals: paired
+bootstrap, 95\%; every NCM--AR quality gap excludes zero, NCM vs.\ NCM+cache does not.
+Throughput in examples/s.}\label{tab:phase4}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lrrrrrr}
 \toprule
- & \multicolumn{2}{c}{XSum} & \multicolumn{2}{c}{WMT14 De$\to$En}\\
- & NCM & BART-base & NCM & opus-mt\\
+ & \multicolumn{3}{c}{XSum} & \multicolumn{3}{c}{WMT14 De$\to$En}\\
+ & NCM & +cache & BART & NCM & +cache & opus-mt\\
 \midrule
-parameters (incl.\ tokenizer) & 149M & 139M & 264M & 74M\\
-quality (ROUGE-L / BLEU) & 27.8 & \textbf{33.5} & 20.0 & \textbf{30.8}\\
-latency batch 1, p50 / p95 (ms) & 268 / \textbf{325} & 274 / 354 & \textbf{242 / 303} & 283 / 536\\
-throughput batch 1 & 3.7 & 3.7 & \textbf{4.0} & 3.4\\
-throughput batch 8 & 5.0 & \textbf{19.6} & \textbf{17.8} & 15.9\\
-throughput batch 32 & 5.0 & \textbf{43.0} & 20.5 & \textbf{47.6}\\
-peak GPU memory, batch 32 & 3.4\,GB & \textbf{0.65\,GB} & 3.8\,GB & \textbf{0.24\,GB}\\
+parameters (incl.\ tokenizer) & 149M & 149M & 139M & 264M & 264M & 74M\\
+ROUGE-L / BLEU & 27.9 & 27.9 & \textbf{33.3} & 21.7 & 21.7 & \textbf{33.1}\\
+\quad 95\% interval & $\pm$0.25 & & $\pm$0.29 & $\pm$0.53 & & $\pm$0.68\\
+latency b=1, p50 / p95 (ms) & 243/277 & 244/312 & 236/320 & 244/296 & 243/297 & 227/387\\
+throughput batch 1 & 4.1 & 4.0 & 4.1 & 4.1 & 4.1 & 4.3\\
+throughput batch 8 & 5.4 & \textbf{21.1} & 20.5 & 17.8 & \textbf{29.7} & 17.6\\
+throughput batch 32 & 5.2 & 23.1 & \textbf{50.6} & 19.1 & \textbf{49.5} & \textbf{49.4}\\
+peak memory, batch 32 & 2.9\,GB & 2.2\,GB & \textbf{0.65\,GB} & 3.8\,GB & 3.2\,GB & \textbf{0.24\,GB}\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -140,14 +148,27 @@ peak GPU memory, batch 32 & 3.4\,GB & \textbf{0.65\,GB} & 3.8\,GB & \textbf{0.24
 \label{fig:phase4}
 \end{figure}
 
-Table~\ref{tab:phase4} and Figure~\ref{fig:phase4} show the central result. At batch 1 NCM is as fast as BART on XSum
-and 1.2$\times$ faster than opus-mt on WMT14, with a tighter p95 because its number of
-passes does not depend on the output. At batch 32 the AR models are 2.3$\times$ (WMT14) to
-8.7$\times$ (XSum) faster. Profiling explains why: each level pass re-runs the transformer
-over the full input prefix (512 tokens for XSum, 9 times), with no KV cache in this
-checkpoint's generation path, whereas BART encodes the article once and runs about 25 cheap
-cached decoder steps. At batch 1 the GPU is under-used either way; at batch 32 NCM's
-repeated prefix work dominates (7.6\,s of 8.0\,s per batch on XSum).
+Table~\ref{tab:phase4} and Figure~\ref{fig:phase4} show the central result. At batch 1 all
+models run at about 4 examples/s; NCM has a tighter p95 because its number of passes does
+not depend on the output. With the official uncached generator, the AR models are
+2.6$\times$ (WMT14) to 9.8$\times$ (XSum) faster at batch 32. Profiling explains why: each
+level pass re-runs the transformer over the full input prefix (512 tokens for XSum, 9 times),
+whereas BART encodes the article once and runs about 25 cheap cached decoder steps. At
+batch 1 the GPU is under-used either way; at batch 32 NCM's repeated prefix work dominates
+(7.6\,s of 8.0\,s per batch on XSum). The figure shows the uncached runs.
+
+\paragraph{The KV cache.}\label{sec:cache} The official \texttt{generate(use\_kv\_cache=True)}
+skips the prefix padding mask in its cached prefix and level passes, so padded positions
+take part in attention (BLEU 3.8). Upstream pull request \#5\footnote{\url{https://github.com/HazyResearch/ncm/pull/5}}
+adds the mask, reuses the level-0 pass's prefix keys and values, and enables the cache for
+XSum; \#4 fixes a memory leak in \texttt{generate()}. With both, cached outputs are
+identical to uncached ones in fp32 (1,024 WMT14 and 256 XSum inputs). In fp16, 94\% (WMT14)
+and 97\% (XSum) are identical and quality does not move: BLEU $-0.03$ [$-0.08$, $+0.03$],
+ROUGE-L $+0.00$ [$-0.00$, $+0.01$]. Batch-32 throughput rises 2.6$\times$ on WMT14, to
+opus-mt's level, and 4.5$\times$ on XSum, which leaves BART 2.2$\times$ ahead. Batch 1 does not
+change, because there the GPU is launch-bound, not compute-bound. Most of the batch-32
+deficit was therefore missing caching, not the method. These cached runs are single runs on
+a different day from the AR runs, so we read WMT14 at batch 32 as a tie.
 
 The quality gap mixes method and pretraining: both baselines start from large-scale
 pretraining, while the NCM checkpoints are trained from scratch on the task data. The NCM
@@ -162,22 +183,34 @@ $\sim$20-word outputs, the step-count advantage mostly disappears.
 advantage on XSum (wrong: XSum is NCM's worst case), and higher memory use (right).
 
 \section{NCM as a tool in RAG and agents}
-\paragraph{Setup.} 40 XQuAD~\citep{xquad2020} questions over its 240 Wikipedia paragraphs,
-MiniLM embeddings~\citep{sbert2019} with FAISS~\citep{faiss2019}, top-3 retrieval,
-qwen2.5:3b answering. An answer is correct if a gold answer string appears in it.
+\paragraph{Setup.} All 1,190 XQuAD~\citep{xquad2020} questions over its 240 Wikipedia
+paragraphs, MiniLM embeddings~\citep{sbert2019} with FAISS~\citep{faiss2019}, top-3
+retrieval, qwen2.5:3b answering at temperature 0. We report three scores: lenient
+containment (a gold answer string appears in the reply), and SQuAD exact match and token F1.
+Rates carry Wilson 95\% intervals. NCM and AR variants are compared on the same questions
+with an exact McNemar test (containment, exact match) and a paired bootstrap (F1).
+A first run on 40 questions (one per paragraph) overestimated every accuracy, e.g.\ 87.5\%
+instead of 73.2\% for plain RAG.
 
 \paragraph{Context compression.} Summarizing each retrieved paragraph before the LLM cuts
-accuracy from 87.5\% to 10.0\% (NCM) and 17.5\% (BART) although retrieval still finds the
-right paragraph 97.5\% of the time: a one-sentence news-style summary keeps the gist and
-drops the fact the question asks for. It is also slower (809 vs.\ 423\,ms), because
-compression costs more than the shorter prompt saves.
+containment accuracy from 73.3\% [70.7, 75.7] to 6.6\% [5.3, 8.1] with NCM and 10.2\%
+[8.6, 12.0] with BART, although retrieval still finds the right paragraph 96.7\% of the time.
+A one-sentence news-style summary keeps the gist and drops the fact the question asks for.
+NCM is significantly worse than BART on all three scores (containment $p=2\times10^{-5}$,
+exact match $p=0.002$, F1 $-0.044$ [$-0.061$, $-0.028$]). Compression is also slower
+(986\,ms with NCM, 714\,ms with BART, vs.\ 417\,ms), because it costs more than the shorter
+prompt saves.
 
-\paragraph{Multilingual RAG.} Translating the German version of the corpus (1,372 sentences)
-with NCM gives 37.5\% accuracy vs.\ 67.5\% with opus-mt (English originals: 87.5\%), at
-half the bulk speed (20 vs.\ 40 sentences/s at batch 32). NCM translations replace entity
-names (``Luthers Schriften'' $\to$ ``Marx's writings''), which is fatal for retrieval.
-\textbf{TODO:} these numbers used a sentence splitter that also split German ordinals
-(``am 3.\ Oktober''); re-run with the fixed splitter and update.
+\paragraph{Multilingual RAG.} Translating the German version of the corpus (1,265 sentences,
+split with a splitter that keeps German ordinals such as ``am 3.\ Oktober'' together) with
+NCM gives 37.9\% [35.2, 40.7] containment accuracy vs.\ 55.8\% [53.0, 58.6] with opus-mt;
+the English originals give 73.2\%. The gap holds on every score: exact match 28.3\% vs.\
+41.2\%, F1 0.465 vs.\ 0.592, all $p<10^{-20}$. Paragraph BLEU against the English originals
+is 30.8 vs.\ 46.6. NCM translations replace entity names (``Luthers Schriften'' $\to$
+``Marx's writings''), which is fatal for retrieval. Bulk translation ran at 19 vs.\
+37 sentences/s at batch 32 with the uncached official code. With the corrected KV cache
+(Section~\ref{sec:cache}) NCM's batch-32 throughput on WMT14 matches opus-mt, so the speed
+gap is an implementation artefact; the quality gap is not.
 
 \paragraph{Agent.} A hand-written tool-calling loop gives the LLM four tools: search and
 three NCM models (summarize, translate, solve Sudoku). Over six multi-step tasks the LLM
@@ -248,11 +281,13 @@ Each Phase 5 task runs 10 times at temperature 0.7 (and once at 0).
 \textbf{TODO:} interpretation.
 
 \section{Discussion}
-On a laptop GPU and short outputs, NCM's parallel decoding buys predictable single-request
-latency, not throughput: its passes repeat work over the input prefix that an AR model with
-a KV cache does once. Its speed would matter for long outputs (Section~\ref{sec:limits}),
-against diffusion models, or with a cached prefix, none of which the released task
-checkpoints exercise. As a tool in LLM pipelines, NCM's speed is dwarfed by the LLM, and
+On a laptop GPU with short outputs, NCM's parallel decoding buys predictable single-request
+latency. Throughput comes only once the input prefix is cached: without the cache, every
+pass repeats prefix work that an AR model does once. With the corrected cache it matches a
+pretrained AR translator at batch 32, but it still trails on summarization (512-token
+inputs) and on quality. Its speed should matter most for long outputs
+(Section~\ref{sec:limits}) and against diffusion models, which the released task
+checkpoints do not exercise. As a tool in LLM pipelines, NCM's speed is dwarfed by the LLM, and
 its weaknesses (lower quality than pretrained baselines, invented entities) are exactly the
 ones RAG punishes.
 \textbf{TODO:} update with the limits-suite findings.
@@ -260,9 +295,9 @@ ones RAG punishes.
 \section{Limitations}
 One GPU and one machine; results on an H100 or with larger batches may differ. Baselines are
 pretrained while NCM checkpoints are not, so the quality gap is not only the method's.
-Evaluation sets are small (500 examples per task, 40 RAG questions, six agent tasks):
-enough to see large effects, not small ones. RAG accuracy uses lenient string containment.
-fp16 is autocast with fp32 weights. We did not re-measure the diffusion baseline behind the
+Phase 4 and RAG use full test sets, but the agent has only six tasks, and the limits suite
+uses smaller samples. Batch-1 latencies come from 100 calls per model, not interleaved
+across models, and have no intervals. fp16 is autocast with fp32 weights. We did not re-measure the diffusion baseline behind the
 31$\times$ claim. Faithfulness uses string proxies, not human judgment.
 
 \section{Reproducibility}

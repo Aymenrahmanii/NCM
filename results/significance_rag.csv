@@ -1,7 +1,7 @@
-experiment,variant,n,accuracy,lo,hi,mcnemar_vs,p_value
-phase5_rag_multilingual,English originals (upper bound),40,0.875,0.739,0.945,,
-phase5_rag_multilingual,translated by NCM (WMT14),40,0.375,0.242,0.53,translated by opus-mt-de-en (AR) (12 vs 0 discordant),0.0005
-phase5_rag_multilingual,translated by opus-mt-de-en (AR),40,0.675,0.52,0.799,,
-phase5_rag_compression,plain RAG,40,0.875,0.739,0.945,,
-phase5_rag_compression,NCM-compressed (XSum summarizer),40,0.1,0.04,0.231,AR-compressed (BART-base XSum) (5 vs 2 discordant),0.4531
-phase5_rag_compression,AR-compressed (BART-base XSum),40,0.175,0.087,0.319,,
+experiment,variant,n,contains,exact_match,token_f1,vs_ar_contains_p,vs_ar_em_p,vs_ar_f1_delta
+phase5_rag_multilingual,English originals (upper bound),1190,"0.732 [0.706, 0.756]","0.514 [0.486, 0.543]","0.696 [0.674, 0.718]",,,
+phase5_rag_multilingual,translated by NCM (WMT14),1190,"0.379 [0.352, 0.407]","0.283 [0.258, 0.309]","0.465 [0.442, 0.489]",5e-35 (267 vs 54),8.7e-21 (216 vs 63),"-0.127 [-0.150, -0.104]"
+phase5_rag_multilingual,translated by opus-mt-de-en (AR),1190,"0.558 [0.530, 0.586]","0.412 [0.384, 0.440]","0.592 [0.568, 0.615]",,,
+phase5_rag_compression,plain RAG,1190,"0.733 [0.707, 0.757]","0.515 [0.487, 0.543]","0.697 [0.675, 0.718]",,,
+phase5_rag_compression,NCM-compressed (XSum summarizer),1190,"0.066 [0.053, 0.081]","0.043 [0.033, 0.056]","0.095 [0.082, 0.109]",2.2e-05 (72 vs 29),0.0021 (50 vs 23),"-0.044 [-0.061, -0.028]"
+phase5_rag_compression,AR-compressed (BART-base XSum),1190,"0.102 [0.086, 0.120]","0.066 [0.053, 0.081]","0.140 [0.123, 0.157]",,,

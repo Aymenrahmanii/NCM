@@ -14,10 +14,10 @@ and an agent, and serves everything through a production-style API.
 
 | question | answer on an RTX 3050 |
 |---|---|
-| Is NCM faster than a same-size AR model? | **At batch 1: about the same** (XSum 268 vs 274 ms) **or 1.2× faster** (WMT14), with a tighter p95. **At batch 32: 2.3–8.7× slower.** |
-| At what quality? | Matches the paper (XSum ROUGE-L 27.8 vs 28.0; Sudoku-hard 84.5% vs 86.1%), but **below pretrained AR models**: ROUGE-L 27.8 vs 33.5, BLEU 20.0 vs 30.8. |
+| Is NCM faster than a same-size AR model? | **At batch 1: about the same** (~4 examples/s for all), with a tighter p95. **At batch 32:** 2.6–9.8× slower with the official generator; with the corrected KV cache (upstream PR #5), **level on WMT14** and 2.2× slower on XSum, at unchanged quality. |
+| At what quality? | Matches the paper (XSum ROUGE-L 27.9 vs 28.0; Sudoku-hard 84.5% vs 86.1%), but **below pretrained AR models** on the full test sets: ROUGE-L 27.9 vs 33.3, BLEU 21.7 vs 33.1 (both gaps significant). |
 | What does "31×" mean? | NCM vs a **diffusion** LM (128+ steps) on an H100 with 1024-token outputs, not vs GPT-style AR models. |
-| Does the speed matter in RAG / agents? | **No.** Compressing chunks with NCM cut RAG accuracy from 87.5% to 10%; NCM translation lowered multilingual RAG accuracy (37.5% vs 67.5%) and was 2× slower in bulk; in the agent the LLM takes 91–97% of the time. |
+| Does the speed matter in RAG / agents? | **No.** On all 1,190 XQuAD questions, compressing chunks with NCM cut RAG accuracy from 73% to 7% (BART: 10%); NCM translation lowered multilingual RAG accuracy (38% vs 56%); in the agent the LLM takes 91–97% of the time. |
 | Toy NCM (Phase 2) | Coarse-to-fine works (reconstruction 17% → 98.7% over 6 levels); 9.3× faster than a toy AR model at batch 1, 3.0× at batch 128, but far less fluent. |
 
 Limits suite (in progress): [docs/limits.md](docs/limits.md) · Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
@@ -92,9 +92,10 @@ models; that is also what CI tests (`pytest -m "not gpu"`).
 - **Baselines are pretrained, NCM is not.** BART-base and opus-mt start from large-scale
   pretraining; NCM's checkpoints were trained from scratch on XSum / WMT14 only. The quality
   gap mixes "method" and "pretraining".
-- **Small evaluation sets.** 500 examples per task in Phase 4, 40 questions in Phase 5, six
-  agent tasks. Good enough to see large effects, not small ones.
-- **Lenient answer scoring.** RAG accuracy = gold answer string appears in the answer.
+- **Evaluation sets.** Phase 4 and RAG use full test sets (XSum 11,334, WMT14 3,003, all
+  1,190 XQuAD questions) with 95% intervals (`results/significance.md`). The agent has only
+  six tasks, and the limits suite uses smaller samples.
+- **RAG scoring.** Lenient containment is reported next to SQuAD exact match and token F1.
 - **fp16 = autocast.** Weights stay in fp32, so the fp16 memory numbers are not minimal.
 - **No diffusion baseline.** The 31× claim itself (vs diffusion LMs) was not re-measured.
 - **NCM's outputs hallucinate** (invented names in translation, invented figures in

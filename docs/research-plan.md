@@ -19,13 +19,15 @@ AR *frontier* (including smaller, faster AR models), not one same-size AR model.
 | Item | State |
 |---|---|
 | Fix 1, limits suite | **Done** (commits `0f4de0a`, `952c824`). Tables are in `paper/tables/`; the paper's "TODO: interpretation" paragraphs are still open. `results/limits_run.log` is the stale log from the failed first run. |
-| Fix 2, full test sets | **Done for WMT14 and XSum** (`bb420d0`). Not done for RAG: still 40 XQuAD questions, not 1,190. |
+| Fix 2, full test sets | **Done** for WMT14 and XSum (`bb420d0`) and for RAG (all 1,190 XQuAD questions, 2026-11-12). The 40-question sample had overestimated every RAG accuracy (plain RAG 87.5% → 73.3%). |
+| Fixes 7–8, RAG scoring and German splitter | **Done** in the same rerun: exact match and token F1 next to containment; 1,265 German sentences with the fixed splitter (was 1,372). NCM vs AR is significant on every score in both experiments, including compression, which was not significant at n=40. |
 | Statistics harness | **Done.** `ncm_lab/stats.py` (paired bootstrap for BLEU and mean metrics, Wilson, exact McNemar) and `ncm_lab.bench.significance`. All Phase 4 quality gaps are significant (see `results/significance.md`). |
 | Fix 3 / Phase 8, cache bisect | **Done.** Padding bug; with the pad fix, cached fp16 is within 0.13 BLEU of uncached and fp32 matches 500/500. 1.87× at batch 32, 0.86× at batch 1. |
 | Phase 8, upstream report | **Not needed as a new issue.** Upstream PR #5 (velaia, open since 2026-10-17, unreviewed) finds the same bug (missing `_pbias` in the cached prefix and level masks) and fixes it with the same edits. Contribute an independent RTX 3050 run as a comment on it instead. |
 | Phase 8, XSum prefix cache | **Covered by PR #5**: it reuses the level-0 pass's prefix K/V, allows the cache for `query_level0` (XSum), and adds `bench_kv.py` and `eval_shard.py --kv-cache`. **Benchmarked here (2026-11-12):** 100% identical outputs; 2.46× on WMT14 and 4.48× on XSum at batch 16, 0.99× at batch 1; XSum peak memory goes from 2.0 to 4.9 GB (see `docs/phase4-results.md`). **Phase 4 rerun with PR #5 + #4, fp16, full test sets:** quality unchanged (bootstrap Δ includes 0); batch-32 throughput WMT14 19.1 → 49.5 ex/s (level with opus-mt, was 2.6× behind), XSum 5.2 → 23.1 ex/s (2.2× behind BART, was 9.8×); memory lower than uncached. Phase 8 success criterion (cached within 0.1 BLEU, batch-32 gap re-measured) is **met**. Remaining for Phase 8: interleaved AR/NCM timing under the full protocol, compiled AR, CPU run. |
 | Phase 8, compiled AR, CPU run, vectorized penalties | Open. |
-| Fixes 6–8 (true fp16, EM/F1, German splitter rerun) | Open. Best done as one RAG rerun at n=1,190 with fixes 7 and 8. |
+| Fix 6, true fp16 weights | Open. |
+| Paper draft | Phase 4 table, cache paragraph, RAG section, abstract and limitations updated to full-test-set numbers. Still open: the limits-suite "TODO: interpretation" paragraphs and the abstract's limits sentence. |
 | Citation | **Done.** `paper/refs.bib` uses the authors' BibTeX (see below). |
 
 **Contact from the authors (2026-11-12).** Hermann Kumbong (first author) wrote to say

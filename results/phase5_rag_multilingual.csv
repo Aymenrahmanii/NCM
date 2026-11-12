@@ -1,4 +1,4 @@
-variant,questions,accuracy,retrieval_hit,context_words,prompt_tokens,retrieve_ms,compress_ms,llm_ms,total_ms,total_p50_ms,translator,translate_s,sentences_per_s,paragraph_bleu
-English originals (upper bound),40,0.875,0.975,367.6,574.5,26.9,0.0,199.3,226.2,176.9,-,0,0,100.0
-translated by NCM (WMT14),40,0.375,0.925,353.4,548.5,44.5,0.0,1138.6,1183.2,516.8,NCM (WMT14),67.94,20.2,30.82
-translated by opus-mt-de-en (AR),40,0.675,0.975,362.2,558.7,23.4,0.0,703.2,726.6,615.7,opus-mt-de-en (AR),34.72,39.5,46.42
+variant,questions,accuracy,exact_match,token_f1,retrieval_hit,context_words,prompt_tokens,retrieve_ms,compress_ms,llm_ms,total_ms,total_p50_ms,translator,translate_s,sentences_per_s,paragraph_bleu
+English originals (upper bound),1190,0.732,0.514,0.696,0.967,377.4,591.2,23.5,0.0,329.7,353.2,319.4,-,0,0,100.0
+translated by NCM (WMT14),1190,0.379,0.283,0.465,0.924,362.9,564.1,20.5,0.0,368.8,389.3,351.7,NCM (WMT14),65.47,19.3,30.84
+translated by opus-mt-de-en (AR),1190,0.558,0.412,0.592,0.953,370.6,572.2,21.8,0.0,377.7,399.6,350.8,opus-mt-de-en (AR),34.0,37.2,46.57
