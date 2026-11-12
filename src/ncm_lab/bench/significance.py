@@ -77,26 +77,47 @@ def phase4_rows(n_resamples: int) -> list[dict]:
     return rows
 
 
+def _wilson(flags: list[bool]) -> str:
+    lo, hi = wilson_interval(sum(flags), len(flags))
+    return f"{sum(flags) / len(flags):.3f} [{lo:.3f}, {hi:.3f}]"
+
+
 def rag_rows() -> list[dict]:
+    """Per variant: containment accuracy and exact match (Wilson CI), token F1 (bootstrap CI).
+
+    The NCM variant's row also compares it with the AR variant on the same questions:
+    exact McNemar for containment and exact match, paired bootstrap for token F1.
+    Files from before exact match / F1 were logged get "-" in those columns.
+    """
     rows = []
     for name, (ar_variant, ncm_variant) in RAG_PAIRS.items():
-        by_variant: dict[str, dict[str, bool]] = {}
+        by_variant: dict[str, dict[str, dict]] = {}
         for x in _jsonl(RESULTS / f"{name}_details.jsonl"):
-            by_variant.setdefault(x["variant"], {})[x["id"]] = bool(x["correct"])
+            by_variant.setdefault(x["variant"], {})[x["id"]] = x
+        has_f1 = all("token_f1" in x for v in by_variant.values() for x in v.values())
         for variant, answers in by_variant.items():
-            k, n = sum(answers.values()), len(answers)
-            lo, hi = wilson_interval(k, n)
-            rows.append({
-                "experiment": name, "variant": variant, "n": n, "accuracy": round(k / n, 3),
-                "lo": round(lo, 3), "hi": round(hi, 3), "mcnemar_vs": "", "p_value": "",
-            })
+            xs = list(answers.values())
+            row = {"experiment": name, "variant": variant, "n": len(xs),
+                   "contains": _wilson([bool(x["correct"]) for x in xs]),
+                   "exact_match": "-", "token_f1": "-",
+                   "vs_ar_contains_p": "", "vs_ar_em_p": "", "vs_ar_f1_delta": ""}
+            if has_f1:
+                row["exact_match"] = _wilson([bool(x["exact_match"]) for x in xs])
+                f1 = [x["token_f1"] for x in xs]
+                r = paired_bootstrap_mean(f1, f1)
+                row["token_f1"] = f"{r.a:.3f} [{r.a_ci[0]:.3f}, {r.a_ci[1]:.3f}]"
+            rows.append(row)
         ids = sorted(set(by_variant[ar_variant]) & set(by_variant[ncm_variant]))
-        t = mcnemar_exact([by_variant[ar_variant][i] for i in ids],
-                          [by_variant[ncm_variant][i] for i in ids])
-        for row in rows:
-            if row["experiment"] == name and row["variant"] == ncm_variant:
-                row["mcnemar_vs"] = f"{ar_variant} ({t['only_a']} vs {t['only_b']} discordant)"
-                row["p_value"] = round(t["p_value"], 4)
+        ar = [by_variant[ar_variant][i] for i in ids]
+        ncm = [by_variant[ncm_variant][i] for i in ids]
+        row = next(r for r in rows if r["experiment"] == name and r["variant"] == ncm_variant)
+        t = mcnemar_exact([x["correct"] for x in ar], [x["correct"] for x in ncm])
+        row["vs_ar_contains_p"] = f"{t['p_value']:.2g} ({t['only_a']} vs {t['only_b']})"
+        if has_f1:
+            t = mcnemar_exact([x["exact_match"] for x in ar], [x["exact_match"] for x in ncm])
+            row["vs_ar_em_p"] = f"{t['p_value']:.2g} ({t['only_a']} vs {t['only_b']})"
+            r = paired_bootstrap_mean([x["token_f1"] for x in ar], [x["token_f1"] for x in ncm])
+            row["vs_ar_f1_delta"] = f"{r.delta:+.3f} [{r.delta_ci[0]:+.3f}, {r.delta_ci[1]:+.3f}]"
     return rows
 
 
@@ -132,7 +153,12 @@ def main() -> None:
         "",
         *_md_table(p4),
         "",
-        "## Phase 5 RAG (Wilson 95% CI; exact McNemar, NCM vs AR variant)",
+        "## Phase 5 RAG",
+        "",
+        "`contains`: a gold answer appears in the reply (lenient). `exact_match`, `token_f1`:",
+        "SQuAD scoring. 95% CIs: Wilson for rates, bootstrap for F1. `vs_ar_*` compares the NCM",
+        "variant with the AR variant on the same questions: exact McNemar p-values (discordant",
+        "pairs AR-only vs NCM-only correct) and the paired-bootstrap F1 difference, NCM − AR.",
         "",
         *_md_table(rag),
         "",

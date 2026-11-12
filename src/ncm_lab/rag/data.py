@@ -34,9 +34,16 @@ def paragraphs(lang: str) -> list[str]:
 
 
 def eval_questions(n: int = 40) -> list[dict]:
-    """n English questions spread over the corpus, each with gold answers and paragraph id."""
+    """English questions with gold answers and paragraph id.
+
+    n <= 0: every question (1,190). Otherwise n questions spread over the corpus, at most one
+    per paragraph, so n is capped at the number of paragraphs (240).
+    """
     rows = load_xquad("en")
     ctx_id = {c: i for i, c in enumerate(paragraphs("en"))}
+    if n <= 0:
+        return [{"id": r["id"], "question": r["question"], "answers": list(r["answers"]["text"]),
+                 "paragraph": ctx_id[r["context"]]} for r in rows]
     first_per_paragraph = {}
     for row in rows:
         first_per_paragraph.setdefault(ctx_id[row["context"]], row)
@@ -80,3 +87,29 @@ def is_correct(prediction: str, answers: list[str]) -> bool:
     """Lenient match: a gold answer appears inside the prediction."""
     pred = normalize(prediction)
     return any(normalize(a) and normalize(a) in pred for a in answers)
+
+
+def exact_match(prediction: str, answers: list[str]) -> bool:
+    """SQuAD exact match: normalized prediction equals a normalized gold answer."""
+    pred = normalize(prediction)
+    return any(pred == normalize(a) for a in answers)
+
+
+def token_f1(prediction: str, answers: list[str]) -> float:
+    """SQuAD token F1, best over the gold answers."""
+    from collections import Counter
+
+    pred = normalize(prediction).split()
+    best = 0.0
+    for a in answers:
+        gold = normalize(a).split()
+        common = sum((Counter(pred) & Counter(gold)).values())
+        if not pred or not gold:
+            score = float(pred == gold)
+        elif common == 0:
+            score = 0.0
+        else:
+            p, r = common / len(pred), common / len(gold)
+            score = 2 * p * r / (p + r)
+        best = max(best, score)
+    return best

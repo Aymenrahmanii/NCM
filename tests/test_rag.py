@@ -1,7 +1,9 @@
+import pytest
+
 from ncm_lab.agents.tools import Toolbox
 from ncm_lab.api.registry import FakeStore, FakeSudoku, FakeTextModel
 from ncm_lab.models.ncm import NCMSudokuSolver
-from ncm_lab.rag.data import is_correct, normalize, split_sentences
+from ncm_lab.rag.data import exact_match, is_correct, normalize, split_sentences, token_f1
 
 
 def test_normalize_drops_case_punctuation_and_articles():
@@ -42,3 +44,13 @@ def test_toolbox_reports_errors_instead_of_crashing():
                     translator=FakeTextModel("t"), sudoku=FakeSudoku("x"))
     result, ms = tools.call("solve_sudoku", {"wrong_arg": 1})
     assert result.startswith("error:") and ms >= 0
+
+
+def test_exact_match_and_token_f1_are_strict():
+    gold = ["Denver Broncos"]
+    assert exact_match("The Denver Broncos.", gold)
+    assert not exact_match("It was the Denver Broncos.", gold)  # containment still counts it
+    assert token_f1("the Denver Broncos", gold) == 1.0
+    assert token_f1("It was the Denver Broncos.", gold) == pytest.approx(2 * 0.5 * 1 / 1.5)
+    assert token_f1("Carolina Panthers", gold) == 0.0
+    assert token_f1("x", ["Broncos", "x"]) == 1.0  # best over gold answers

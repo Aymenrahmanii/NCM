@@ -14,7 +14,7 @@ from pathlib import Path
 
 import torch
 
-from .data import eval_questions, is_correct, paragraphs, split_sentences
+from .data import eval_questions, exact_match, is_correct, paragraphs, split_sentences, token_f1
 from .llm import OllamaLLM
 from .pipeline import RAGPipeline
 from .store import VectorStore
@@ -37,6 +37,8 @@ def run_questions(pipe: RAGPipeline, questions: list[dict], variant: str) -> lis
             "variant": variant, "id": q["id"], "question": q["question"],
             "gold": q["answers"], "answer": res.answer,
             "correct": is_correct(res.answer, q["answers"]),
+            "exact_match": exact_match(res.answer, q["answers"]),
+            "token_f1": round(token_f1(res.answer, q["answers"]), 4),
             "retrieved_gold": q["paragraph"] in res.doc_ids,
             "context_words": sum(len(c.split()) for c in res.contexts),
             "prompt_tokens": res.prompt_tokens,
@@ -51,6 +53,8 @@ def summarize(rows: list[dict]) -> dict:
     return {
         "variant": rows[0]["variant"], "questions": len(rows),
         "accuracy": round(sum(r["correct"] for r in rows) / len(rows), 3),
+        "exact_match": round(sum(r["exact_match"] for r in rows) / len(rows), 3),
+        "token_f1": round(statistics.fmean(r["token_f1"] for r in rows), 3),
         "retrieval_hit": round(sum(r["retrieved_gold"] for r in rows) / len(rows), 3),
         "context_words": mean("context_words"), "prompt_tokens": mean("prompt_tokens"),
         "retrieve_ms": mean("retrieve_ms"), "compress_ms": mean("compress_ms"),
@@ -160,7 +164,8 @@ def multilingual(n: int, precision: str) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("experiment", choices=["compression", "multilingual"])
-    ap.add_argument("--n", type=int, default=40)
+    ap.add_argument("--n", type=int, default=0,
+                    help="questions; 0 = all 1,190, otherwise one per paragraph (max 240)")
     ap.add_argument("--precision", default="fp16", choices=["fp32", "fp16", "bf16"])
     args = ap.parse_args()
     if not OllamaLLM().available():
