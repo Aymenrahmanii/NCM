@@ -4,7 +4,7 @@
 laptop GPU, at what quality, and does that speed matter inside a real RAG or agent pipeline?**
 
 NCM ([paper](https://arxiv.org/abs/2610.14162), [code](https://github.com/HazyResearch/ncm),
-Hazy Research, Oct 2026) generates text coarse to fine: a tiny "gist" first, then longer
+Kumbong et al., Hazy Research, Oct 2026) generates text coarse to fine: a tiny "gist" first, then longer
 and longer refinements, predicting every position of a level in parallel. This repo builds a
 toy NCM from scratch, runs the official checkpoints behind a clean wrapper, benchmarks them
 fairly against autoregressive (AR) models on an **RTX 3050 6 GB**, uses them as tools in RAG

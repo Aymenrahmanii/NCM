@@ -32,6 +32,35 @@ Run: `python -m ncm_lab.bench.run --task xsum|wmt14 --n 500 --precision fp16`, t
 `python -m ncm_lab.bench.plot`. Raw numbers: `results/phase4_*_fp16.csv`; every output next to
 its reference: `results/phase4_outputs_*.jsonl`; charts: `results/phase4_*_fp16.png`.
 
+### Full test sets with 95% intervals (rerun 2026-11-11)
+
+Same setup on every test example: XSum 11,334 articles, WMT14 3,003 sentences. Quality
+intervals come from a paired bootstrap (10,000 resamples, `python -m ncm_lab.bench.significance`,
+full table in `results/significance.md`). Raw numbers are in `results/phase4_*_fp16.csv`.
+
+| | XSum NCM | XSum BART-base | WMT14 NCM | WMT14 opus-mt |
+|---|---|---|---|---|
+| quality | ROUGE-L 27.94 [27.68, 28.18] | ROUGE-L 33.26 [32.97, 33.55] | BLEU 21.73 [21.19, 22.24] | BLEU 33.05 [32.36, 33.72] |
+| NCM − AR | **−5.33 [−5.56, −5.09]** | | **−11.32 [−11.85, −10.80]** | |
+| ROUGE-1 / 2 | 34.92 / 12.72 | 41.31 / 18.01 | – | – |
+| latency b=1, median / p95 (ms) | 243 / 277 | 236 / 320 | 244 / 296 | 227 / 387 |
+| throughput b=1 / 8 / 32 (ex/s) | 4.1 / 5.4 / 5.2 | 4.1 / 20.5 / **50.6** | 4.1 / 17.8 / 19.1 | 4.3 / 17.6 / **49.4** |
+| peak GPU memory b=32 | 2.9 GB | 0.65 GB | 3.8 GB | 0.24 GB |
+
+What changes against the n=500 tables below: every quality gap is significant, and the
+intervals are about ±0.3 ROUGE-L and ±0.5 BLEU. At batch 1 NCM is now **level with AR on
+median latency** for both tasks; the earlier 1.2× WMT14 lead does not hold on the full set.
+NCM's p95 is still tighter. At batch 32, AR is 2.6× (WMT14) and 9.8× (XSum) faster. Batch-1
+latencies have no interval yet: the full run timed a fixed set of calls, not the plan's
+interleaved 200-call protocol.
+
+**KV cache (`results/cache_parity/`, `python -m ncm_lab.bench.cache_parity`).** The BLEU 3.8
+with `use_kv_cache=True` (see below) is a padding bug in the cached path, not a property of
+the method. In fp32 the cached and uncached outputs match on 500 of 500 sentences. With the
+pad fix in fp16, cached BLEU is 19.94 against 20.07 uncached (difference −0.13, 95% CI
+[−0.25, −0.03]); the first divergence is at level 6, block 0, about 1% relative, which fits
+fp16 rounding. Speed: 0.86× at batch 1, where launches dominate, and 1.87× at batch 32.
+
 ### Summarization (XSum, 500 test articles)
 
 | | NCM | BART-base (AR) |
