@@ -1,0 +1,28 @@
+NVIDIA GeForce RTX 3050 6GB Laptop GPU, 616.92, 64, 1492 MHz
+torch 2.14.1+cu130 cuda 13.0
+PR #5 head 60c947b01510dedac7fe4d4797d9eade0e018d4c
+VQVAE, Total parameter count: 144.00M
+VQVAE, Non embedding parameter count: 85.73M
+NCP Transformer, Total parameter count: 119.96M
+NCP Transformer, Non embedding parameter count: 119.66M
+[wmt14] device=NVIDIA GeForce RTX 3050 6GB Laptop GPU torch=2.14.1+cu130 n=1024 bs=16 cfg=0.0
+eager     92.49s      11.1 seq/s  peak  2.14 GB  identical 100.0%  BLEU 20.59
+kv        37.60s      27.2 seq/s  peak  2.73 GB  identical 100.0%  BLEU 20.59
+speedup kv vs eager: 2.46x
+VQVAE, Total parameter count: 144.00M
+VQVAE, Non embedding parameter count: 85.73M
+NCP Transformer, Total parameter count: 119.96M
+NCP Transformer, Non embedding parameter count: 119.66M
+[wmt14] device=NVIDIA GeForce RTX 3050 6GB Laptop GPU torch=2.14.1+cu130 n=128 bs=1 cfg=0.0
+eager     30.91s       4.1 seq/s  peak  1.21 GB  identical 100.0%  BLEU 17.00
+kv        31.28s       4.1 seq/s  peak  1.25 GB  identical 100.0%  BLEU 17.00
+speedup kv vs eager: 0.99x
+VQVAE, Total parameter count: 60.63M
+VQVAE, Non embedding parameter count: 41.30M
+NCP Transformer, Total parameter count: 88.02M
+NCP Transformer, Non embedding parameter count: 87.71M
+[xsum] device=NVIDIA GeForce RTX 3050 6GB Laptop GPU torch=2.14.1+cu130 n=256 bs=16 cfg=0.0
+eager    104.01s       2.5 seq/s  peak  2.02 GB  identical 100.0%  ROUGE-L 27.85
+kv        23.21s      11.0 seq/s  peak  4.92 GB  identical 100.0%  ROUGE-L 27.85
+speedup kv vs eager: 4.48x
+81, 1492 MHz

@@ -1,0 +1,30 @@
+[
+ {
+  "task": "wmt14",
+  "mode": "eager",
+  "device": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "n": 128,
+  "bs": 1,
+  "cfg": 0.0,
+  "seconds": 30.909601451999947,
+  "seq_per_s": 4.141108069567749,
+  "peak_gb": 1.206698496,
+  "identical_to_first": 1.0,
+  "metric": "BLEU",
+  "score": 17.00299227057681
+ },
+ {
+  "task": "wmt14",
+  "mode": "kv",
+  "device": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+  "n": 128,
+  "bs": 1,
+  "cfg": 0.0,
+  "seconds": 31.275584669000068,
+  "seq_per_s": 4.092649309506653,
+  "peak_gb": 1.252802048,
+  "identical_to_first": 1.0,
+  "metric": "BLEU",
+  "score": 17.00299227057681
+ }
+]

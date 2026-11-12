@@ -22,8 +22,9 @@ AR *frontier* (including smaller, faster AR models), not one same-size AR model.
 | Fix 2, full test sets | **Done for WMT14 and XSum** (`bb420d0`). Not done for RAG: still 40 XQuAD questions, not 1,190. |
 | Statistics harness | **Done.** `ncm_lab/stats.py` (paired bootstrap for BLEU and mean metrics, Wilson, exact McNemar) and `ncm_lab.bench.significance`. All Phase 4 quality gaps are significant (see `results/significance.md`). |
 | Fix 3 / Phase 8, cache bisect | **Done.** Padding bug; with the pad fix, cached fp16 is within 0.13 BLEU of uncached and fp32 matches 500/500. 1.87× at batch 32, 0.86× at batch 1. |
-| Phase 8, upstream report | Open. An author has made contact (see below). |
-| Phase 8, XSum prefix cache, compiled AR, CPU run, vectorized penalties | Open. |
+| Phase 8, upstream report | **Not needed as a new issue.** Upstream PR #5 (velaia, open since 2026-10-17, unreviewed) finds the same bug (missing `_pbias` in the cached prefix and level masks) and fixes it with the same edits. Contribute an independent RTX 3050 run as a comment on it instead. |
+| Phase 8, XSum prefix cache | **Covered by PR #5**: it reuses the level-0 pass's prefix K/V, allows the cache for `query_level0` (XSum), and adds `bench_kv.py` and `eval_shard.py --kv-cache`. **Benchmarked here (2026-11-12):** 100% identical outputs; 2.46× on WMT14 and 4.48× on XSum at batch 16, 0.99× at batch 1; XSum peak memory goes from 2.0 to 4.9 GB (see `docs/phase4-results.md`). Next: rerun the Phase 4 batch sweep with the cache on, and test PR #4 (memory leak in `generate()`) for the memory figure. |
+| Phase 8, compiled AR, CPU run, vectorized penalties | Open. |
 | Fixes 6–8 (true fp16, EM/F1, German splitter rerun) | Open. Best done as one RAG rerun at n=1,190 with fixes 7 and 8. |
 | Citation | **Done.** `paper/refs.bib` uses the authors' BibTeX (see below). |
 
@@ -33,10 +34,9 @@ full BibTeX is at github.com/HazyResearch/ncm#citation. That entry is now in
 `paper/refs.bib` and the README credits "Kumbong et al.". This changes three things in the
 plan:
 
-1. **Upstream KV-cache report.** Still file it as a public GitHub issue with the
-   under-40-line reproduction, so anyone can verify it. Then send Hermann the link in your
-   reply. The bug is now understood (padding), so offer the pad fix as a pull request in the
-   same message.
+1. **Upstream KV-cache report.** PR #5 already has the fix. Post the RTX 3050 laptop
+   results (fp32 identity, fp16 BLEU −0.13, batch-1 vs batch-32 speedup) as a comment on it,
+   and point Hermann to it in your reply. A new issue would only duplicate it.
 2. **Pretraining confound (fix 4, step 1).** Ask directly whether the matched-data AR
    baselines (ROUGE-L 24.4, BLEU 25.2) can be released. That one question could replace a
    90-hour retrain.

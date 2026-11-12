@@ -61,6 +61,23 @@ pad fix in fp16, cached BLEU is 19.94 against 20.07 uncached (difference −0.13
 [−0.25, −0.03]); the first divergence is at level 6, block 0, about 1% relative, which fits
 fp16 rounding. Speed: 0.86× at batch 1, where launches dominate, and 1.87× at batch 32.
 
+**Upstream fix, PR #5 (`results/upstream_pr5/`).** Upstream PR #5 fixes the same mask bug,
+reuses the prefix K/V from the level-0 pass, and enables the cache for XSum. Its
+`scripts/bench_kv.py` at commit `60c947b`, run on this GPU in fp32 with TF32 off. Each run
+is a single timed pass, so there are no intervals.
+
+| run | eager | KV cache | speedup | identical | metric (both) | peak memory eager / KV |
+|---|---|---|---|---|---|---|
+| WMT14, 1,024 at batch 16 | 92.5 s | 37.6 s | **2.46×** | 100% | BLEU 20.59 | 2.14 / 2.73 GB |
+| WMT14, 128 at batch 1 | 30.9 s | 31.3 s | 0.99× | 100% | BLEU 17.00 | 1.21 / 1.25 GB |
+| XSum, 256 at batch 16 | 104.0 s | 23.2 s | **4.48×** | 100% | ROUGE-L 27.85 | 2.02 / **4.92 GB** |
+
+The cache removes the repeated prefix work that made XSum NCM's worst case at batch 16.
+At batch 1 it gains nothing: launch overhead dominates, not prefix compute. So the batch-1
+tie with the AR models stands, and the batch-32 deficit needs re-measuring with the cache on.
+XSum memory more than doubles with the cache. PR #4, a memory leak fix in `generate()`, may
+explain part of it; check that before quoting the memory figure.
+
 ### Summarization (XSum, 500 test articles)
 
 | | NCM | BART-base (AR) |
