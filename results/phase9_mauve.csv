@@ -1,0 +1,5 @@
+model,n,draws,mauve,mauve_sd
+human,1280,4,0.9566,0.0073
+ncm,1280,5,0.797,0.0421
+ar-tinystories,1280,5,0.9488,0.0059
+ar-gpt2,1280,5,0.0216,0.0015
