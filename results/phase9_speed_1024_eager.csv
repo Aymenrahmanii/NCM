@@ -1,0 +1,4 @@
+length,model,params_M,compiled,batch_size,calls,median_ms,median_lo,median_hi,p95_ms,ms_per_token
+1024,ncm,389.7,False,1,20,1530.8,1506.5,1576.3,1709.3,1.495
+1024,ar-gpt2,124.4,False,1,20,15050.7,14804.7,15484.2,15728.3,14.698
+1024,ar-gpt2-medium,354.8,False,1,20,26613.6,26316.8,26941.6,27209.3,25.99

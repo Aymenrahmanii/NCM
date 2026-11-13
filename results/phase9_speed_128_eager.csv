@@ -1,0 +1,7 @@
+length,model,params_M,compiled,batch_size,calls,median_ms,median_lo,median_hi,p95_ms,ms_per_token
+128,ncm,125.0,False,1,50,423.1,395.0,492.6,759.0,3.305
+128,ar-tinystories,68.5,False,1,50,1725.8,1639.1,1839.6,3034.7,13.483
+128,ar-gpt2,124.4,False,1,50,2639.6,2514.9,2766.1,4502.7,20.622
+128,ncm,125.0,False,8,30,337.6,325.5,364.3,429.6,2.638
+128,ar-tinystories,68.5,False,8,30,1310.2,1281.7,1386.9,1464.1,10.236
+128,ar-gpt2,124.4,False,8,30,1934.8,1874.8,1995.1,2200.2,15.116

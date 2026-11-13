@@ -1,0 +1,4 @@
+length,batch_size,model_a,model_b,median_latency_ratio_a_over_b,lo,hi,differs
+1024,1,ncm,ar-gpt2,0.102,0.098,0.105,True
+1024,1,ncm,ar-gpt2-medium,0.058,0.056,0.059,True
+1024,1,ar-gpt2,ar-gpt2-medium,0.566,0.556,0.583,True

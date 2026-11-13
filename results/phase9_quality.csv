@@ -1,0 +1,4 @@
+model,model_id,samples,seeds,gen_ppl,gen_ppl_sd,entropy_gpt2_tokens,entropy_gpt2_sd,entropy_native,words
+ncm,hazyresearch/ncm tinystories,1280,5,16.52,0.35,3.989,0.011,3.976,103.7
+ar-tinystories,roneneldan/TinyStories-33M,1280,5,9.96,0.14,4.0,0.005,,99.9
+ar-gpt2,gpt2,1280,5,91.06,2.73,4.264,0.034,,83.8

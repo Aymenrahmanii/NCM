@@ -1,0 +1,7 @@
+length,batch_size,model_a,model_b,median_latency_ratio_a_over_b,lo,hi,differs
+128,1,ncm,ar-tinystories,0.245,0.226,0.285,True
+128,1,ncm,ar-gpt2,0.16,0.149,0.184,True
+128,1,ar-tinystories,ar-gpt2,0.654,0.61,0.699,True
+128,8,ncm,ar-tinystories,0.258,0.242,0.279,True
+128,8,ncm,ar-gpt2,0.174,0.168,0.188,True
+128,8,ar-tinystories,ar-gpt2,0.677,0.653,0.714,True

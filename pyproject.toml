@@ -28,6 +28,8 @@ dependencies = [
     "sentence-transformers",
     "faiss-cpu",
     "requests",
+    # phase 9: distribution-level quality of unconditional samples
+    "mauve-text",
     # phase 6: service
     "fastapi",
     "uvicorn[standard]",
