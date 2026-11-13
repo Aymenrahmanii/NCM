@@ -1,0 +1,4 @@
+task,model,precision,device,batch_size,calls,median_ms,median_lo,median_hi,p95_ms,p95_lo,p95_hi,ex_per_s,ex_per_s_lo,ex_per_s_hi
+wmt14,ncm,fp32,cpu x4,1,100,1842.2,1827.9,1856.1,1918.3,1901.5,1952.6,0.54,0.54,0.55
+wmt14,ncm-kv,fp32,cpu x4,1,100,955.7,947.2,967.8,1033.4,1003.5,1057.7,1.05,1.03,1.06
+wmt14,ar,fp32,cpu x4,1,100,573.6,514.2,635.0,1067.3,993.3,1184.8,1.74,1.57,1.94

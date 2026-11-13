@@ -1,0 +1,4 @@
+task,model,precision,device,batch_size,calls,median_ms,median_lo,median_hi,p95_ms,p95_lo,p95_hi,ex_per_s,ex_per_s_lo,ex_per_s_hi
+xsum,ncm,fp32,cpu x4,1,100,5236.3,5195.3,5254.1,5388.3,5358.3,5393.5,0.19,0.19,0.19
+xsum,ncm-kv,fp32,cpu x4,1,100,1175.7,1167.3,1183.9,1244.4,1226.2,1275.7,0.85,0.84,0.86
+xsum,ar,fp32,cpu x4,1,100,1076.2,1022.9,1132.7,1371.8,1293.5,1509.7,0.93,0.88,0.98

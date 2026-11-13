@@ -2,3 +2,6 @@ task,model,model_id,precision,n,params_M,bleu,avg_output_words,latency_p50_ms,la
 wmt14,ar,Helsinki-NLP/opus-mt-de-en,fp16,3003,74.4,33.05,19.2,227.2,386.9,4.3,154,17.59,172,49.42,236
 wmt14,ncm,hazyresearch/ncm-checkpoints/wmt14,fp16,3003,264.0,21.73,18.5,243.9,295.8,4.11,1536,17.82,2048,19.09,3769
 wmt14,ncm-kv,hazyresearch/ncm-checkpoints/wmt14,fp16,3003,264.0,21.7,18.5,242.6,297.2,4.06,1511,29.65,1906,49.46,3240
+wmt14,ncm-kv-half,hazyresearch/ncm-checkpoints/wmt14,fp16,3003,264.0,21.71,18.5,248.2,362.0,3.85,614,29.63,1006,54.4,2352
+wmt14,ar-compiled,Helsinki-NLP/opus-mt-de-en,fp16,3003,74.4,33.06,19.2,95.6,172.0,9.87,155,47.6,179,126.22,257
+wmt14,ncm-kv-half-compiled,hazyresearch/ncm-checkpoints/wmt14,fp16,3003,264.0,21.71,18.5,52.1,64.2,18.83,614,65.82,1006,74.12,2352

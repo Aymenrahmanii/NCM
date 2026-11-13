@@ -1,0 +1,7 @@
+task,model,precision,device,batch_size,calls,median_ms,median_lo,median_hi,p95_ms,p95_lo,p95_hi,ex_per_s,ex_per_s_lo,ex_per_s_hi
+wmt14,ncm-kv-half-compiled,fp16,NVIDIA GeForce RTX 3050 6GB Laptop GPU,1,200,62.2,60.2,63.8,85.2,81.7,88.8,16.08,15.68,16.61
+wmt14,ar-compiled,fp16,NVIDIA GeForce RTX 3050 6GB Laptop GPU,1,200,103.8,98.4,108.9,183.6,173.3,205.2,9.64,9.19,10.17
+wmt14,ncm-kv-half-compiled,fp16,NVIDIA GeForce RTX 3050 6GB Laptop GPU,8,200,118.7,117.6,119.9,134.0,132.3,137.3,67.39,66.7,68.03
+wmt14,ar-compiled,fp16,NVIDIA GeForce RTX 3050 6GB Laptop GPU,8,200,174.6,163.7,180.4,253.3,232.8,271.1,45.82,44.34,48.87
+wmt14,ncm-kv-half-compiled,fp16,NVIDIA GeForce RTX 3050 6GB Laptop GPU,32,200,495.6,490.2,498.2,558.6,538.0,582.0,64.57,64.23,65.29
+wmt14,ar-compiled,fp16,NVIDIA GeForce RTX 3050 6GB Laptop GPU,32,200,291.6,282.0,299.9,381.3,368.5,387.5,109.73,106.7,113.49

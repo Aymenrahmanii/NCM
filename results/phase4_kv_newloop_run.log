@@ -1,0 +1,7 @@
+[bench] xsum / ncm-kv / fp16
+VQVAE, Total parameter count: 60.63M
+VQVAE, Non embedding parameter count: 41.30M
+NCP Transformer, Total parameter count: 88.02M
+NCP Transformer, Non embedding parameter count: 87.71M
+{'task': 'xsum', 'model': 'ncm-kv', 'model_id': 'hazyresearch/ncm-checkpoints/xsum', 'precision': 'fp16', 'n': 11334, 'params_M': 148.6, 'rouge1': 34.93, 'rouge2': 12.72, 'rougeL': 27.94, 'avg_output_words': 20.7, 'latency_p50_ms': 226.2, 'latency_p95_ms': 275.4, 'throughput_bs1': 4.34, 'peak_MB_bs1': 939, 'throughput_bs8': 20.58, 'peak_MB_bs8': 1196, 'throughput_bs32': 23.3, 'peak_MB_bs32': 2200}
+wrote results/phase4_xsum_fp16.csv

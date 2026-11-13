@@ -1,0 +1,3 @@
+task,batch_size,model_a,model_b,median_latency_ratio_a_over_b,lo,hi,differs
+xsum,1,ncm-kv,ncm-kv-half,0.968,0.946,1.003,False
+xsum,32,ncm-kv,ncm-kv-half,1.146,1.134,1.17,True

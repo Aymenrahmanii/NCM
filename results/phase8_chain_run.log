@@ -1,0 +1,95 @@
+/mnt/c/Users/aymen/Desktop/NCM/.venv/lib/python3.12/site-packages/transformers/models/marian/tokenization_marian.py:176: UserWarning: Recommended:{'task': 'wmt14', 'model': 'ar-compiled', 'model_id': 'Helsinki-NLP/opus-mt-de-en', 'precision': 'fp16', 'n': 3003, 'params_M': 74.4, 'bleu': 33.06, 'avg_output_words': 19.2, 'latency_p50_ms': 95.6, 'latency_p95_ms': 172.0, 'throughput_bs1': 9.87, 'peak_MB_bs1': 155, 'throughput_bs8': 47.6, 'peak_MB_bs8': 179, 'throughput_bs32': 126.22, 'peak_MB_bs32': 257}
+wrote results/phase4_wmt14_fp16.csv
+=== exit 0
+=== 2026-11-13T10:08:30+01:00 .venv/bin/python -m ncm_lab.bench.run --task xsum --models ar-compiled --n 11334
+[bench] xsum / ar-compiled / fp16
+{'task': 'xsum', 'model': 'ar-compiled', 'model_id': 'morenolq/bart-base-xsum', 'precision': 'fp16', 'n': 11334, 'params_M': 139.4, 'rouge1': 41.3, 'rouge2': 18.0, 'rougeL': 33.25, 'avg_output_words': 19.4, 'latency_p50_ms': 117.9, 'latency_p95_ms': 157.5, 'throughput_bs1': 8.3, 'peak_MB_bs1': 295, 'throughput_bs8': 35.3, 'peak_MB_bs8': 384, 'throughput_bs32': 62.68, 'peak_MB_bs32': 682}
+wrote results/phase4_xsum_fp16.csv
+=== exit 0
+=== 2026-11-13T10:16:51+01:00 .venv/bin/python -m ncm_lab.bench.interleaved --task wmt14 --models ncm-kv-half ar ar-compiled --tag compiled
+VQVAE, Total parameter count: 144.00M
+VQVAE, Non embedding parameter count: 85.73M
+NCP Transformer, Total parameter count: 119.96M
+NCP Transformer, Non embedding parameter count: 119.66M
+[interleaved] wmt14 batch 1: 200 rounds
+{'task': 'wmt14', 'model': 'ncm-kv-half', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 1, 'calls': 200, 'median_ms': 288.3, 'median_lo': 282.0, 'median_hi': 292.9, 'p95_ms': 374.3, 'p95_lo': 345.2, 'p95_hi': 388.6, 'ex_per_s': 3.47, 'ex_per_s_lo': 3.41, 'ex_per_s_hi': 3.55}
+{'task': 'wmt14', 'model': 'ar', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 1, 'calls': 200, 'median_ms': 219.4, 'median_lo': 203.7, 'median_hi': 246.5, 'p95_ms': 494.8, 'p95_lo': 440.5, 'p95_hi': 522.1, 'ex_per_s': 4.56, 'ex_per_s_lo': 4.06, 'ex_per_s_hi': 4.91}
+{'task': 'wmt14', 'model': 'ar-compiled', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 1, 'calls': 200, 'median_ms': 100.2, 'median_lo': 91.1, 'median_hi': 107.1, 'p95_ms': 179.0, 'p95_lo': 167.5, 'p95_hi': 1Loading weights:   0%|          | 0/260 [00:00<?, ?it/s]Loading weights:  37%|███▋      | 96/260 [00:00<00:00, 939.22it/s]Loading weights:  84%|████████▍ | 218/260 [00:00<00:00, 1102.57it/s]Loading weights: 100%|██████████| 260/260 [00:00<00:00, 954.38it/s] 
+Loading weights:   0%|          | 0/260 [00:00<?, ?it/s]Loading weights:  51%|█████     | 132/260 [00:00<00:00, 1314.16it/s]Loading weights: 100%|██████████| 260/260 [00:00<00:00, 1171.00it/s]
+W1113 10:41:54.068000 1445 .venv/lib/python3.12/site-packages/torch/_inductor/utils.py:1806] [0/2] Not enough SMs to use max_autotune_gemm mode
+/mnt/c/Users/aymen/Desktop/NCM/.venv/lib/python3.12/site-packages/transformers/models/marian/tokenization_marian.py:176: UserWarning: Recommended: pip install sacremoses.
+  warnings.warn("Recommended: pip install sacremoses.")
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/258 [00:00<?, ?it/s]Loading weights: 100%|██████████| 258/258 [00:00<00:00, 6037.90it/s]
+Loading weights:   0%|          | 0/260 [00:00<?, ?it/s]Loading weights:  42%|████▏     | 108/260 [00:00<00:00, 1063.54it/s]Loading weights: 100%|██████████| 260/260 [00:00<00:00, 1368.05it/s]
+1}
+{'task': 'wmt14', 'model': 'ar', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 32, 'calls': 200, 'median_ms': 689.6, 'median_lo': 680.4, 'median_hi': 708.9, 'p95_ms': 864.1, 'p95_lo': 846.5, 'p95_hi': 948.6, 'ex_per_s': 46.41, 'ex_per_s_lo': 45.14, 'ex_per_s_hi': 47.03}
+{'task': 'wmt14', 'model': 'ar-compiled', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 32, 'calls': 200, 'median_ms': 277.0, 'median_lo': 263.3, 'median_hi': 284.0, 'p95_ms': 368.2, 'p95_lo': 348.6, 'p95_hi': 402.6, 'ex_per_s': 115.53, 'ex_per_s_lo': 112.67, 'ex_per_s_hi': 121.52}
+{'task': 'wmt14', 'batch_size': 1, 'model_a': 'ncm-kv-half', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 1.314, 'lo': 1.175, 'hi': 1.426, 'differs': True}
+{'task': 'wmt14', 'batch_size': 1, 'model_a': 'ncm-kv-half', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.878, 'lo': 2.687, 'hi': 3.152, 'differs': True}
+{'task': 'wmt14', 'batch_size': 1, 'model_a': 'ar', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.19, 'lo': 2.052, 'hi': 2.368, 'differs': True}
+{'task': 'wmt14', 'batch_size': 8, 'model_a': 'ncm-kv-half', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 0.586, 'lo': 0.552, 'hi': 0.621, 'differs': True}
+{'task': 'wmt14', 'batch_size': 8, 'model_a': 'ncm-kv-half', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 1.747, 'lo': 1.697, 'hi': 1.843, 'differs': True}
+{'task': 'wmt14', 'batch_size': 8, 'model_a': 'ar', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.984, 'lo': 2.885, 'hi': 3.132, 'differs': True}
+{'task': 'wmt14', 'batch_size': 32, 'model_a': 'ncm-kv-half', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 0.902, 'lo': 0.874, 'hi': 0.92, 'differs': True}
+{'task': 'wmt14', 'batch_size': 32, 'model_a': 'ncm-kv-half', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.246, 'lo': 2.189, 'hi': 2.359, 'differs': True}
+{'task': 'wmt14', 'batch_size': 32, 'model_a': 'ar', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.49, 'lo': 2.447, 'hi': 2.601, 'differs': True}
+wrote results/phase8_interleaved_wmt14_compiled.csv
+=== exit 0
+=== 2026-11-13T10:34:41+01:00 .venv/bin/python -m ncm_lab.bench.interleaved --task xsum --models ncm-kv-half ar ar-compiled --tag compiled
+VQVAE, Total parameter count: 60.63M
+VQVAE, Non embedding parameter count: 41.30M
+NCP Transformer, Total parameter count: 88.02M
+NCP Transformer, Non embedding parameter count: 87.71M
+[interleaved] xsum batch 1: 200 rounds
+{'task': 'xsum', 'model': 'ncm-kv-half', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 1, 'calls': 200, 'median_ms': 259.7, 'median_lo': 255.7, 'median_hi': 265.1, 'p95_ms': 330.6, 'p95_lo': 311.0, 'p95_hi': 336.3, 'ex_per_s': 3.85, 'ex_per_s_lo': 3.77, 'ex_per_s_hi': 3.91}
+{'task': 'xsum', 'model': 'ar', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 1, 'calls': 200, 'median_ms': 275.8, 'median_lo': 259.6, 'median_hi': 281.6, 'p95_ms': 387.3, 'p95_lo': 367.1, 'p95_hi': 416.0, 'ex_per_s': 3.63, 'ex_per_s_lo': 3.55, 'ex_per_s_hi': 3.85}
+{'task': 'xsum', 'model': 'ar-compiled', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 1, 'calls': 200, 'median_ms': 119.0, 'median_lo': 115.9, 'median_hi': 122.4, 'p95_ms': 157.7, 'p95_lo': 152.2, 'p95_hi': 173.2, 'ex_per_s': 8.41, 'ex_per_s_lo': 8.17, 'ex_per_s_hi': 8.63}
+[interleaved] xsum batch 8: 200 rounds
+{'task': 'xsum', 'model': 'ncm-kv-half', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 8, 'calls': 200, 'median_ms': 340.4, 'median_lo': 335.1, 'median_hi': 346.0, 'p95_ms': 406.0, 'p95_lo': 390.8, 'p95_hi': 421.6, 'ex_per_s': 23.5, 'ex_per_s_lo': 23.12, 'ex_per_s_hi': 23.87}
+{'task': 'xsum', 'model': 'ar', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 8, 'calls': 200, 'median_ms': 438.6, 'median_lo': 425.9, 'median_hi': 445.9, 'p95_ms': 574.2, 'p95_lo': 552.2, 'p95_hi': 611.1, 'ex_per_s': 18.24, 'ex_per_s_lo': 17.94, 'ex_per_s_hi': 18.78}
+{'task': 'xsum', 'model': 'ar-compiled', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 8, 'calls': 200, 'median_ms': 233.6, 'median_lo': 229.5, 'median_hi': 239.1, 'p95_ms': 287.5, 'p95_lo': 280.7, 'p95_hi': 301.1, 'ex_per_s': 34.24, 'ex_per_s_lo': 33.46, 'ex_per_s_hi': 34.86}
+[interleaved] xsum batch 32: 200 rounds
+{'task': 'xsum', 'model': 'ncm-kv-half', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 32, 'calls': 200, 'median_ms': 1189.8, 'median_lo': 1167.2, 'median_hi': 1197.5, 'p95_ms': 1277.8, 'p95_lo': 1268.7, 'p95_hi': 1300.1, 'ex_per_s': 26.89, 'ex_per_s_lo': 26.72, 'ex_per_s_hi': 27.42}
+{'task': 'xsum', 'model': 'ar', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 32, 'calls': 200, 'median_ms': 710.6, 'median_lo': 696.9, 'median_hi': 718.1, 'p95_ms': 887.8, 'p95_lo': 830.0, 'p95_hi': 930.3, 'ex_per_s': 45.03, 'ex_per_s_lo': 44.56, 'ex_per_s_hi': 45.91}
+{'task': 'xsum', 'model': 'ar-compiled', 'precision': 'fp16', 'device': 'NVIDIA GeForce RTX 3050 6GB Laptop GPU', 'batch_size': 32, 'calls': 200, 'median_ms': 542.5, 'median_lo': 534.1, 'median_hi': 552.0, 'p95_ms': 661.3, 'p95_lo': 627.7, 'p95_hi': 742.6, 'ex_per_s': 58.98, 'ex_per_s_lo': 57.97, 'ex_per_s_hi': 59.92}
+{'task': 'xsum', 'batch_size': 1, 'model_a': 'ncm-kv-half', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 0.941, 'lo': 0.917, 'hi': 1.002, 'differs': False}
+{'task': 'xsum', 'batch_size': 1, 'model_a': 'ncm-kv-half', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.183, 'lo': 2.113, 'hi': 2.252, 'differs': True}
+{'task': 'xsum', 'batch_size': 1, 'model_a': 'ar', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.318, 'lo': 2.191, 'hi': 2.374, 'differs': True}
+{'task': 'xsum', 'batch_size': 8, 'model_a': 'ncm-kv-half', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 0.776, 'lo': 0.76, 'hi': 0.801, 'differs': True}
+{'task': 'xsum', 'batch_size': 8, 'model_a': 'ncm-kv-half', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 1.457, 'lo': 1.423, 'hi': 1.487, 'differs': True}
+{'task': 'xsum', 'batch_size': 8, 'model_a': 'ar', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 1.877, 'lo': 1.827, 'hi': 1.91, 'differs': True}
+{'task': 'xsum', 'batch_size': 32, 'model_a': 'ncm-kv-half', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 1.674, 'lo': 1.641, 'hi': 1.708, 'differs': True}
+{'task': 'xsum', 'batch_size': 32, 'model_a': 'ncm-kv-half', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 2.193, 'lo': 2.148, 'hi': 2.224, 'differs': True}
+{'task': 'xsum', 'batch_size': 32, 'model_a': 'ar', 'model_b': 'ar-compiled', 'median_latency_ratio_a_over_b': 1.31, 'lo': 1.279, 'hi': 1.33, 'differs': True}
+wrote results/phase8_interleaved_xsum_compiled.csv
+=== exit 0
+=== 2026-11-13T10:57:26+01:00 .venv/bin/python -m ncm_lab.bench.interleaved --task wmt14 --device cpu --threads 4 --precision fp32 --batch-sizes 1 --models ncm ncm-kv ar --calls 100 --warmup 5 --tag cpu4
+VQVAE, Total parameter count: 144.00M
+VQVAE, Non embedding parameter count: 85.73M
+NCP Transformer, Total parameter count: 119.96M
+NCP Transformer, Non embedding parameter count: 119.66M
+[interleaved] wmt14 batch 1: 100 rounds
+{'task': 'wmt14', 'model': 'ncm', 'precision': 'fp32', 'device': 'cpu x4', 'batch_size': 1, 'calls': 100, 'median_ms': 1842.2, 'median_lo': 1827.9, 'median_hi': 1856.1, 'p95_ms': 1918.3, 'p95_lo': 1901.5, 'p95_hi': 1952.6, 'ex_per_s': 0.54, 'ex_per_s_lo': 0.54, 'ex_per_s_hi': 0.55}
+{'task': 'wmt14', 'model': 'ncm-kv', 'precision': 'fp32', 'device': 'cpu x4', 'batch_size': 1, 'calls': 100, 'median_ms': 955.7, 'median_lo': 947.2, 'median_hi': 967.8, 'p95_ms': 1033.4, 'p95_lo': 1003.5, 'p95_hi': 1057.7, 'ex_per_s': 1.05, 'ex_per_s_lo': 1.03, 'ex_per_s_hi': 1.06}
+{'task': 'wmt14', 'model': 'ar', 'precision': 'fp32', 'device': 'cpu x4', 'batch_size': 1, 'calls': 100, 'median_ms': 573.6, 'median_lo': 514.2, 'median_hi': 635.0, 'p95_ms': 1067.3, 'p95_lo': 993.3, 'p95_hi': 1184.8, 'ex_per_s': 1.74, 'ex_per_s_lo': 1.57, 'ex_per_s_hi': 1.94}
+{'task': 'wmt14', 'batch_size': 1, 'model_a': 'ncm', 'model_b': 'ncm-kv', 'median_latency_ratio_a_over_b': 1.928, 'lo': 1.899, 'hi': 1.948, 'differs': True}
+{'task': 'wmt14', 'batch_size': 1, 'model_a': 'ncm', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 3.212, 'lo': 2.897, 'hi': 3.587, 'differs': True}
+{'task': 'wmt14', 'batch_size': 1, 'model_a': 'ncm-kv', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 1.666, 'lo': 1.503, 'hi': 1.863, 'differs': True}
+wrote results/phase8_interleaved_wmt14_cpu4.csv
+=== exit 0
+=== 2026-11-13T11:06:22+01:00 .venv/bin/python -m ncm_lab.bench.interleaved --task xsum --device cpu --threads 4 --precision fp32 --batch-sizes 1 --models ncm ncm-kv ar --calls 100 --warmup 5 --tag cpu4
+VQVAE, Total parameter count: 60.63M
+VQVAE, Non embedding parameter count: 41.30M
+NCP Transformer, Total parameter count: 88.02M
+NCP Transformer, Non embedding parameter count: 87.71M
+[interleaved] xsum batch 1: 100 rounds
+{'task': 'xsum', 'model': 'ncm', 'precision': 'fp32', 'device': 'cpu x4', 'batch_size': 1, 'calls': 100, 'median_ms': 5236.3, 'median_lo': 5195.3, 'median_hi': 5254.1, 'p95_ms': 5388.3, 'p95_lo': 5358.3, 'p95_hi': 5393.5, 'ex_per_s': 0.19, 'ex_per_s_lo': 0.19, 'ex_per_s_hi': 0.19}
+{'task': 'xsum', 'model': 'ncm-kv', 'precision': 'fp32', 'device': 'cpu x4', 'batch_size': 1, 'calls': 100, 'median_ms': 1175.7, 'median_lo': 1167.3, 'median_hi': 1183.9, 'p95_ms': 1244.4, 'p95_lo': 1226.2, 'p95_hi': 1275.7, 'ex_per_s': 0.85, 'ex_per_s_lo': 0.84, 'ex_per_s_hi': 0.86}
+{'task': 'xsum', 'model': 'ar', 'precision': 'fp32', 'device': 'cpu x4', 'batch_size': 1, 'calls': 100, 'median_ms': 1076.2, 'median_lo': 1022.9, 'median_hi': 1132.7, 'p95_ms': 1371.8, 'p95_lo': 1293.5, 'p95_hi': 1509.7, 'ex_per_s': 0.93, 'ex_per_s_lo': 0.88, 'ex_per_s_hi': 0.98}
+{'task': 'xsum', 'batch_size': 1, 'model_a': 'ncm', 'model_b': 'ncm-kv', 'median_latency_ratio_a_over_b': 4.454, 'lo': 4.413, 'hi': 4.485, 'differs': True}
+{'task': 'xsum', 'batch_size': 1, 'model_a': 'ncm', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 4.865, 'lo': 4.614, 'hi': 5.122, 'differs': True}
+{'task': 'xsum', 'batch_size': 1, 'model_a': 'ncm-kv', 'model_b': 'ar', 'median_latency_ratio_a_over_b': 1.092, 'lo': 1.038, 'hi': 1.152, 'differs': True}
+wrote results/phase8_interleaved_xsum_cpu4.csv
+=== exit 0
+=== done 2026-11-13T11:22:28+01:00
