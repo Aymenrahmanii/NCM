@@ -14,7 +14,7 @@ latency, with both sides optimized as hard as possible. The question is whether 
 AR *frontier* (including smaller, faster AR models), not one same-size AR model. Goals 2 and
 3 only mean something once that frontier exists.
 
-## Status (updated 2026-11-12)
+## Status (updated 2026-11-13)
 
 | Item | State |
 |---|---|
@@ -26,8 +26,10 @@ AR *frontier* (including smaller, faster AR models), not one same-size AR model.
 | Phase 8, upstream report | **Not needed as a new issue.** Upstream PR #5 (velaia, open since 2026-10-17, unreviewed) finds the same bug (missing `_pbias` in the cached prefix and level masks) and fixes it with the same edits. Contribute an independent RTX 3050 run as a comment on it instead. |
 | Phase 8, XSum prefix cache | **Covered by PR #5**: it reuses the level-0 pass's prefix K/V, allows the cache for `query_level0` (XSum), and adds `bench_kv.py` and `eval_shard.py --kv-cache`. **Benchmarked here (2026-11-12):** 100% identical outputs; 2.46× on WMT14 and 4.48× on XSum at batch 16, 0.99× at batch 1; XSum peak memory goes from 2.0 to 4.9 GB (see `docs/phase4-results.md`). **Phase 4 rerun with PR #5 + #4, fp16, full test sets:** quality unchanged (bootstrap Δ includes 0); batch-32 throughput WMT14 19.1 → 49.5 ex/s (level with opus-mt, was 2.6× behind), XSum 5.2 → 23.1 ex/s (2.2× behind BART, was 9.8×); memory lower than uncached. Phase 8 success criterion (cached within 0.1 BLEU, batch-32 gap re-measured) is **met**. Remaining for Phase 8: compiled AR, CPU run. |
 | Phase 8, interleaved timing | **Done (2026-11-12).** `ncm_lab.bench.interleaved`, full protocol (20 warm-up, 200 rotating rounds, paired-bootstrap ratio CIs, GPU temperature logged). NCM ÷ AR median latency at batch 1: WMT14 1.26 [1.14, 1.37] (**not a tie**; opus-mt is faster), XSum 0.99 [0.94, 1.05]. With the cache: WMT14 0.57 at batch 8, 1.03 at batch 32; XSum 0.97 at batch 8, 2.04 at batch 32. NCM's p95 is lower at batch 1 on both. See `docs/phase4-results.md`. |
-| Phase 8, compiled AR, CPU run, vectorized penalties | Open. |
-| Fix 6, true fp16 weights | Open. |
+| Phase 8, penalty loop | **Done (2026-11-13).** Incremental `pick_tokens`: identical picks (tests + all 11,334 XSum outputs), 120 → 63 ms and 640 → 62 MB scratch at batch 32. Only ~4% of a cached XSum batch, so not a bottleneck any more. Codes-to-logits not re-profiled yet. |
+| Phase 8, compiled AR, CPU run | **Done (2026-11-13).** Compiled AR (static cache) keeps quality and is 2.2–2.3× faster than eager at batch 1. Interleaved, NCM (cache, fp16 weights, *not compiled*) ÷ compiled AR: 2.9× / 2.2× at batch 1, 1.5–1.7× at 8, 2.2× at 32 (WMT14 / XSum): NCM is slower everywhere. CPU, 4 threads, batch 1: cached NCM 1.67× (WMT14) and 1.09× (XSum) slower than eager AR, so the CPU hypothesis is confirmed. **NCM compiled too (2026-11-13):** CUDA graphs on the PR #5 cached passes, quality unchanged. Both compiled, interleaved, NCM ÷ AR: WMT14 0.60 / 0.68 / 1.70 and XSum 0.81 / 1.16 / 1.98 at batch 1 / 8 / 32. NCM wins at small batches, AR at batch 32. Dynamo's recompile limit (8) silently fell back to eager in a first run; now guarded. Phase 8 is complete; next is Phase 9. |
+| Fix 6, true fp16 weights | **Done (2026-11-13).** `ncm-kv-half`: quality unchanged (WMT14 +0.01 BLEU, XSum −0.02 ROUGE-L), peak memory at batch 32 3.24 → 2.35 GB (WMT14) and 2.20 → 1.33 GB (XSum), batch-32 throughput +10% / +25%. See `docs/phase4-results.md`. |
+| Limits write-up | **Drafted (2026-11-13)** in `docs/limits.md` (prediction verdicts) and the paper's limits paragraphs, abstract and discussion. Needs your edit; the suite predates the cache fix. |
 | Paper draft | Phase 4 table, cache paragraph, RAG section, abstract and limitations updated to full-test-set numbers. Still open: the limits-suite "TODO: interpretation" paragraphs and the abstract's limits sentence. |
 | Citation | **Done.** `paper/refs.bib` uses the authors' BibTeX (see below). |
 
