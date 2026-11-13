@@ -58,16 +58,26 @@ def score(task: str, hyps: list[str], refs: list[str]) -> dict[str, float]:
     return {"bleu": round(sacrebleu.corpus_bleu(hyps, [refs]).score, 2)}
 
 
-def make_model(name: str, task: str, precision: str):
-    if name in ("ncm", "ncm-kv"):  # ncm-kv needs NCM_ROOT pointing at a checkout with PR #5
+NCM_VARIANTS = {  # name -> (kv_cache, cast_weights, compiled); "kv" needs NCM_ROOT with PR #5
+    "ncm": (False, False, False), "ncm-kv": (True, False, False),
+    "ncm-half": (False, True, False), "ncm-kv-half": (True, True, False),
+    "ncm-kv-half-compiled": (True, True, True),
+}
+
+
+def make_model(name: str, task: str, precision: str, device: str = "cuda"):
+    if name in NCM_VARIANTS:
         from ncm_lab.models.ncm import NCMSummarizer, NCMTranslator
 
         cls = NCMSummarizer if task == "xsum" else NCMTranslator
-        return cls(precision=precision, kv_cache=name == "ncm-kv")
-    if name == "ar":
+        kv, cast, comp = NCM_VARIANTS[name]
+        return cls(device=device, precision=precision, kv_cache=kv, cast_weights=cast,
+                   compiled=comp)
+    if name in ("ar", "ar-compiled"):
         from ncm_lab.models.baselines import HFSeq2Seq
 
-        return HFSeq2Seq(task, precision=precision)
+        return HFSeq2Seq(task, device=device, precision=precision,
+                         compiled=name == "ar-compiled")
     raise ValueError(name)
 
 
@@ -96,8 +106,10 @@ def bench_model(name: str, task: str, precision: str, inputs: list, refs: list[s
     row["avg_output_words"] = round(statistics.fmean(len(h.split()) for h in hyps), 1)
 
     # latency: one request at a time
+    # compiled models specialize per input shape: warm up on every timed input
+    compiled = getattr(model, "compiled", False)
     singles = [model.prepare([x]) for x in inputs[:LATENCY_N]]
-    for p in singles[:3]:
+    for p in singles if compiled else singles[:3]:
         model.run(p)  # warm-up
     torch.cuda.reset_peak_memory_stats()
     lat = sorted(timed_run(model, p)[1] * 1000 for p in singles)
@@ -109,7 +121,8 @@ def bench_model(name: str, task: str, precision: str, inputs: list, refs: list[s
     # throughput at larger batches
     for bs in BATCH_SIZES:
         batches = [model.prepare(inputs[i : i + bs]) for i in range(0, THROUGHPUT_N, bs)]
-        model.run(batches[0])  # warm-up
+        for b in batches if compiled else batches[:1]:
+            model.run(b)  # warm-up
         torch.cuda.reset_peak_memory_stats()
         total = sum(timed_run(model, b)[1] for b in batches)
         row[f"throughput_bs{bs}"] = round(THROUGHPUT_N / total, 2)

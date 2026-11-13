@@ -55,3 +55,20 @@ def test_kv_cache_matches_uncached_in_fp32():
     eager = model.generate(texts)
     model.kv_cache = True
     assert model.generate(texts) == eager
+
+
+@needs_gpu
+@pytest.mark.skipif(not _have("wmt14"), reason="wmt14 checkpoint not downloaded")
+def test_cast_weights_stores_fp16_and_still_translates():
+    model = NCMTranslator(precision="fp16", cast_weights=True)
+    dtypes = {p.dtype for p in [*model.net.parameters(), *model.tk.vqvae.parameters()]}
+    assert dtypes == {torch.float16}
+    out = model.generate(["Guten Morgen.", "Das Wetter ist heute schön."])
+    assert len(out) == 2 and all(s.strip() for s in out)
+
+
+@needs_gpu
+@pytest.mark.skipif(not _have("wmt14"), reason="wmt14 checkpoint not downloaded")
+def test_compiled_requires_kv_cache():
+    with pytest.raises(ValueError, match="kv_cache"):
+        NCMTranslator(precision="fp16", compiled=True)
