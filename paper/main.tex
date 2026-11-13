@@ -56,6 +56,11 @@ general LLM, and agent reliability.
 At batch 1, NCM becomes faster than AR only beyond about 30 output tokens, close to the
 length of these tasks' outputs; it breaks on inputs longer than a sentence, repeats words
 3--7$\times$ more often than the AR baselines, and never flags an unsolvable puzzle.
+On unconditional generation up to 1024 tokens (architecture timed with random weights, as the
+long checkpoint is unreleased), NCM is 6--16$\times$ faster than compiled GPT-2 models at
+batch 1, but the advantage is gone by batch 8 at 512 tokens; at 128 tokens its samples are as
+diverse as an in-domain AR model's, but with 1.7$\times$ the perplexity and lower MAUVE (0.80
+vs.\ 0.95).
 All code, outputs and per-example logs are released.
 \end{abstract}
 
@@ -364,14 +369,59 @@ temperature 0 and 0.7 alike. On Sudoku it calls the right tool but passes a malf
 puzzle in 10 of 11 runs and then gives up. Reliability here is a prompt and argument-format
 problem, not a property of the tool.
 
+\section{Long unconditional outputs}\label{sec:long}
+The paper times 1024-token unconditional generation, but the 1024-token OpenWebText
+checkpoint is not released; every released unconditional checkpoint has a 128-token canvas.
+We therefore measure quality at 128 tokens with the real TinyStories NCM (125M), and speed
+from 128 to 1024 tokens with upstream's OpenWebText architecture and \emph{random weights}
+(317--390M; latency depends on shapes and pass count, not on the weights). Every model samples
+with temperature 1 and no truncation, as upstream's evaluation does, and runs in bf16 (fp16
+overflows in these checkpoints). AR baselines are compiled with a static cache and forced to
+write exactly $L$ tokens; NCM is compiled too. Timing is interleaved with paired-bootstrap
+intervals.
+
+\begin{table}[t]\centering\small
+\caption{Unconditional samples at 128 tokens, 1,280 per model (5 seeds). Perplexity under
+GPT-2 large; unigram entropy (nats) on GPT-2 tokens; $\pm$ is the SD across seeds. MAUVE
+against 5 disjoint draws of 1,280 human TinyStories stories (GPT-2 large features); the human
+row scores one draw against the other four.}\label{tab:long-quality}
+\begin{tabular}{lrrrr}\toprule
+Model & Params & Gen.\ PPL $\downarrow$ & Entropy & MAUVE $\uparrow$\\\midrule
+NCM (TinyStories) & 125M & 16.52 $\pm$ 0.35 & 3.989 & 0.797\\
+TinyStories-33M (AR) & 68.5M & 9.96 $\pm$ 0.14 & 4.000 & 0.949\\
+GPT-2 small (out of domain) & 124M & 91.06 $\pm$ 2.73 & 4.264 & 0.022\\
+Human (held-out draws) & -- & -- & -- & 0.957\\\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]\centering
+\includegraphics[width=\linewidth]{phase9_latency_vs_length.png}
+\caption{Median latency per call against output length, all models compiled, bf16. NCM above
+128 tokens uses random weights. The batch-8 points at 1024 tokens ($\times$) spilled past the
+6\,GB card's memory and are not valid timings.}\label{fig:long}
+\end{figure}
+
+At 128 tokens NCM matches the in-domain AR model's diversity (entropy within 0.011 nats) at
+1.66$\times$ its perplexity (Table~\ref{tab:long-quality}). MAUVE separates them more clearly:
+TinyStories-33M is near the human ceiling (0.949 vs.\ 0.957), NCM is not (0.797).
+At batch 1 NCM is faster at every length (Figure~\ref{fig:long}): 6--10$\times$ faster than
+GPT-2 small and 13--16$\times$ faster than the size-matched GPT-2 medium (at 1024 tokens:
+0.93\,s vs.\ 5.9\,s and 12.1\,s). The advantage does not grow with length; NCM ÷ GPT-2 small
+goes from 0.126 at 256 tokens to 0.158 at 1024, because NCM's time grows slightly faster
+than linearly. Batching erases it: at batch 8 NCM ÷ GPT-2 small rises from 0.20 at 128 tokens
+to 0.90 at 512, with break-even a little above 512 tokens. Compiling helps AR more than NCM
+(2.2--2.5$\times$ vs.\ 1.6$\times$ at 1024 tokens), so eager-only comparisons overstate NCM.
+None of this measures the quality of a trained 1024-token NCM.
+
 \section{Discussion}
 On a laptop GPU with short outputs, NCM's parallel decoding buys predictable single-request
 latency. Throughput comes only once the input prefix is cached: without the cache, every
 pass repeats prefix work that an AR model does once. With the corrected cache it matches a
 pretrained AR translator at batch 32, but it still trails on summarization (512-token
-inputs) and on quality. Its speed should matter most for long outputs
-(Section~\ref{sec:limits}) and against diffusion models, which the released task
-checkpoints do not exercise. As a tool in LLM pipelines, NCM's speed is dwarfed by the LLM, and
+inputs) and on quality. On long unconditional outputs (Section~\ref{sec:long}) the
+single-request advantage is large, 6--16$\times$ against compiled AR models at batch 1 up to
+1024 tokens, but it comes from the fixed pass count rather than from length, and it is gone by
+batch 8 at 512 tokens. We did not compare against diffusion models, the paper's baseline. As a tool in LLM pipelines, NCM's speed is dwarfed by the LLM, and
 its weaknesses (lower quality than pretrained baselines, invented entities) are exactly the
 ones RAG punishes.
 The limits suite locates the niche: on this GPU, NCM's batch-1 advantage starts at about 30
@@ -386,7 +436,8 @@ Phase 4 and RAG use full test sets, but the agent has only six tasks, and the li
 uses smaller samples. Only the ratios in Table~\ref{tab:interleaved} are interleaved and
 have intervals; the GPU ran at 66--88\,$^\circ$C with the SM clock between 1.2 and 1.9\,GHz,
 so absolute times vary between runs. Except where marked as fp16 weights, NCM runs fp16 autocast over fp32 weights. Compiled rows compile only NCM's generator passes, not its tokenizer decoder or penalty loop. We did not re-measure the diffusion baseline behind the
-31$\times$ claim. Faithfulness uses string proxies, not human judgment.
+31$\times$ claim. Long-output timings above 128 tokens use random weights, and long-output
+quality is measured only at 128 tokens; the long runs use bf16 throughout. Faithfulness uses string proxies, not human judgment.
 
 \section{Reproducibility}
 Code, configuration, every output and per-example log are at
