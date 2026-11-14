@@ -86,3 +86,49 @@ level (loss 3.12 nats per code), even with all coarser levels real:
 
 Files: `results/phase10_diag_summary.md`, `_levels.csv`, `_teacher_forced.csv`,
 `_samples.txt` (three stories completed every way).
+
+## Scale-up setup (2026-11-14)
+
+```bash
+python -m ncm_lab.scale.data                 # full TinyStories, 256 tokens, ~8 min CPU
+bash scripts/phase10_train.sh                # tokenizer, 2 generators, 5 AR models
+bash scripts/phase10_train.sh seeds          # seeds 1 and 2 of gen25m and ar25m
+python -m ncm_lab.scale.evaluate quality     # T tuned on val by MAUVE, scored on test
+python -m ncm_lab.scale.evaluate latency     # batch 1, GPU (add --device cpu)
+python -m ncm_lab.scale.evaluate plot
+```
+
+- **Data:** 2,119,489 training stories, 424M non-pad tokens, cut to 256 tokens with the
+  Phase 2 BPE (4096). Only 21% of stories fill all 256 positions, so a budget of 200M
+  positions is about 160M real tokens. The official validation split is halved into `val`
+  (10,995 stories, temperature tuning) and `test` (10,995).
+- **Models** (code in `src/ncm_lab/scale/`, same design as the toy NCM):
+
+  | model | width × layers | params |
+  |---|---|---|
+  | tokenizer, levels 1, 2, 4, …, 256, 512 codes each | 288 × (4 enc + 4 dec) | 10.7M |
+  | gen12m / gen25m | 384 × 6 / 512 × 7 | 12.5M / 24.6M |
+  | ar2m / ar3m / ar7m / ar25m / ar35m | 128×4 / 192×4 / 256×6 / 512×7 / 512×10 | 1.9 / 3.4 / 6.9 / 26.4 / 35.9M |
+
+  ar35m matches the NCM's total footprint (tokenizer + gen25m = 35.3M).
+- **Held constant:** AdamW (0.9, 0.95, wd 0.01), lr 5e-4, cosine with 300 warm-up steps,
+  bf16, batch 64 × 256, clip 1.0. Tokenizer 100M positions, everything else 200M.
+- **Resumable:** checkpoints every 250 steps; batches are seeded by (seed, step), so a
+  stopped and resumed run is bit-identical to an uninterrupted one (tested).
+- **Measured cost on the RTX 3050**, each model alone (two in one process spill past 6 GB):
+  tokenizer ~0.5 h, gen12m 1.5 h, gen25m 2.4 h (micro-batch 32), AR ladder 9 h in total.
+  About 24 GPU-hours with the extra seeds, against the plan's estimate of 55.
+
+### Tokenizer result (100M positions, 32 min)
+
+Token reconstruction on 1024 val stories when decoding from the first k levels:
+
+| levels used | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|---|
+| finest length | 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 |
+| accuracy | 10.1% | 10.3% | 10.6% | 11.0% | 12.4% | 17.2% | 30.6% | 58.3% | **96.6%** |
+
+It passes the 95% gate. As in the toy (45% at a quarter of the length, 73% at half), the
+coarse levels carry little token-level detail: at a quarter and half of the length this one
+gets 31% and 58%. The text is mostly written by the last two levels, the ones the
+diagnostic found fragile. Log: `artifacts/scale/tokenizer/log.csv`.
