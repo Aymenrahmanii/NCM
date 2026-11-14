@@ -14,7 +14,7 @@ class Attention(nn.Module):
         self.qkv = nn.Linear(dim, 3 * dim)
         self.proj = nn.Linear(dim, dim)
 
-    def forward(self, x, mask=None, cache: dict | None = None):
+    def forward(self, x, mask=None, cache: dict | None = None, causal: bool = False):
         b, t, c = x.shape
         q, k, v = self.qkv(x).view(b, t, 3, self.heads, c // self.heads).permute(2, 0, 3, 1, 4)
         if cache is not None:  # KV cache: keep keys/values of earlier tokens
@@ -22,8 +22,10 @@ class Attention(nn.Module):
                 k = torch.cat([cache["k"], k], dim=2)
                 v = torch.cat([cache["v"], v], dim=2)
             cache["k"], cache["v"] = k, v
-        # mask: bool (T, S), True = may attend
-        out = F.scaled_dot_product_attention(q, k, v, attn_mask=mask)
+        # mask: bool (T, S), True = may attend. causal=True gives the same result as a
+        # lower-triangular mask but lets PyTorch use its flash-attention kernel.
+        out = F.scaled_dot_product_attention(q, k, v, attn_mask=mask,
+                                             is_causal=causal and mask is None)
         return self.proj(out.transpose(1, 2).reshape(b, t, c))
 
 
@@ -35,8 +37,8 @@ class Block(nn.Module):
         self.ln2 = nn.LayerNorm(dim)
         self.mlp = nn.Sequential(nn.Linear(dim, 4 * dim), nn.GELU(), nn.Linear(4 * dim, dim))
 
-    def forward(self, x, mask=None, cache=None):
-        x = x + self.attn(self.ln1(x), mask, cache)
+    def forward(self, x, mask=None, cache=None, causal: bool = False):
+        x = x + self.attn(self.ln1(x), mask, cache, causal)
         return x + self.mlp(self.ln2(x))
 
 
@@ -46,9 +48,9 @@ class Transformer(nn.Module):
         self.blocks = nn.ModuleList(Block(dim, heads) for _ in range(layers))
         self.ln = nn.LayerNorm(dim)
 
-    def forward(self, x, mask=None, caches: list[dict] | None = None):
+    def forward(self, x, mask=None, caches: list[dict] | None = None, causal: bool = False):
         for i, block in enumerate(self.blocks):
-            x = block(x, mask, None if caches is None else caches[i])
+            x = block(x, mask, None if caches is None else caches[i], causal)
         return self.ln(x)
 
 

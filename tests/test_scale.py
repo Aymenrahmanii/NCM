@@ -59,7 +59,7 @@ def test_batch_indices_depend_only_on_seed_and_step():
 @pytest.fixture
 def tiny_run(tmp_path, monkeypatch):
     rows = np.random.default_rng(0).integers(2, VOCAB_SIZE, (200, 16)).astype(np.int16)
-    monkeypatch.setattr(strain, "load_split", lambda name: rows)
+    monkeypatch.setattr(strain, "load_split", lambda name, **kw: rows)
     monkeypatch.setattr(strain, "ART", tmp_path)
     monkeypatch.setattr(strain, "STOP_FILE", tmp_path / "STOP")
     monkeypatch.setattr(strain, "BATCH", 8)

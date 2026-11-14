@@ -54,6 +54,10 @@ DEFAULT_TOKENS = {"tokenizer": 100e6, "gen": 200e6, "ar": 200e6}
 MAX_CORRUPT = 0.25
 VAL_ROWS = 1024
 EVAL_CHUNK = 64
+# Speed settings, used on CUDA only. None of them changes the maths (compile and the fused
+# optimizer only reorder floating-point work), and checkpoints stay interchangeable:
+# Module.compile() compiles in place, so state_dict keys do not change.
+SPEED = {"in_memory": True, "fused_adam": True, "compile": True}
 
 
 def amp(dev: str):
@@ -112,9 +116,9 @@ def generator_losses(gen: Generator, tok: Tokenizer, ids: torch.Tensor,
 @torch.no_grad()
 def generator_eval(gen: Generator, tok: Tokenizer, val: torch.Tensor) -> dict:
     out = {}
-    for i in range(0, len(val), 256):
-        losses, accs = generator_losses(gen, tok, val[i:i + 256], 0.0)
-        w = len(val[i:i + 256]) / len(val)
+    for i in range(0, len(val), EVAL_CHUNK):
+        losses, accs = generator_losses(gen, tok, val[i:i + EVAL_CHUNK], 0.0)
+        w = len(val[i:i + EVAL_CHUNK]) / len(val)
         for k, (lo, ac) in enumerate(zip(losses, accs)):
             out[f"nll_l{k + 1}"] = out.get(f"nll_l{k + 1}", 0.0) + lo.item() * w
             out[f"acc_l{k + 1}"] = out.get(f"acc_l{k + 1}", 0.0) + ac.item() * w
@@ -142,9 +146,13 @@ def run(name: str, model: nn.Module, loss_fn: Callable[[torch.Tensor, int], torc
         print(f"{name}: already finished", flush=True)
         return True
     total = int(tokens // TOKENS_PER_STEP)
-    train = load_split("train")
+    cuda = dev == "cuda"
+    train = load_split("train", in_memory=cuda and SPEED["in_memory"])
     opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=LR,
-                            weight_decay=0.01, betas=(0.9, 0.95))
+                            weight_decay=0.01, betas=(0.9, 0.95),
+                            fused=cuda and SPEED["fused_adam"])
+    if cuda and SPEED["compile"]:
+        model.compile()
     step = 0
     if (out / "ckpt.pt").exists():
         ck = torch.load(out / "ckpt.pt", map_location=dev, weights_only=False)
@@ -197,6 +205,8 @@ def run(name: str, model: nn.Module, loss_fn: Callable[[torch.Tensor, int], torc
             with amp(dev):
                 metrics = eval_fn()
             model.train()
+            if dev == "cuda":  # give back the eval's peak memory, or it stays reserved
+                torch.cuda.empty_cache()
             row = {"step": step, "tokens_m": round(step * TOKENS_PER_STEP / 1e6, 1),
                    "train_loss": round(loss_sum, 4), "lr": cosine_lr(step - 1, total, LR),
                    "min_elapsed": round((time.time() - start) / 60, 1), **metrics}
@@ -246,6 +256,8 @@ def train_tokenizer(tokens: float, seed: int, dev: str, **kw) -> bool:
 def train_generator(size: str, tokens: float, seed: int, dev: str, **kw) -> bool:
     torch.manual_seed(seed)
     tok = load_tokenizer(dev)
+    if dev == "cuda" and SPEED["compile"]:
+        tok.encoder.compile()  # frozen, but runs on every batch to produce the targets
     gen = Generator(GENERATORS[size], tok.cfg).to(dev)
     val = load_val(dev)
 

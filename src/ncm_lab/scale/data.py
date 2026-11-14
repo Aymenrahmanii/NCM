@@ -47,9 +47,13 @@ def encode(ids_per_text: list[list[int]], seq_len: int = SEQ_LEN) -> np.ndarray:
     return out
 
 
-def load_split(name: str, root: Path = OUT_DIR) -> np.ndarray:
-    """(N, 256) int16, memory-mapped: only the rows a batch touches are read."""
-    return np.load(root / f"{name}.npy", mmap_mode="r")
+def load_split(name: str, root: Path = OUT_DIR, in_memory: bool = False) -> np.ndarray:
+    """(N, 256) int16. Memory-mapped by default: only the rows a batch touches are read.
+
+    in_memory=True reads the whole file once (1.1 GB for train), which avoids a slow
+    random read per batch when the data sits on the Windows drive under WSL.
+    """
+    return np.load(root / f"{name}.npy", mmap_mode=None if in_memory else "r")
 
 
 def batch_from(data: np.ndarray, idx: np.ndarray, dev: str) -> torch.Tensor:

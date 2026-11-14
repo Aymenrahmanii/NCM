@@ -171,9 +171,13 @@ class ARModel(nn.Module):
         causal = torch.tril(torch.ones(cfg.seq_len, cfg.seq_len, dtype=torch.bool))
         self.register_buffer("causal", causal, persistent=False)
 
+    use_flash = True  # is_causal instead of an explicit mask: same maths, faster kernel
+
     def forward(self, ids: torch.Tensor) -> torch.Tensor:
         t = ids.shape[1]
         x = self.embed(ids) + self.pos(torch.arange(t, device=ids.device))
+        if self.use_flash:
+            return self.head(self.transformer(x, causal=True))
         return self.head(self.transformer(x, self.causal[:t, :t]))
 
     def loss(self, ids: torch.Tensor, pad_id: int) -> torch.Tensor:
