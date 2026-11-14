@@ -1,0 +1,192 @@
+===== story 1 =====
+real: Spot. Spot saw the shiny car and said, "Wow, Kitty, your car is so bright and clean!" Kitty smiled and replied, "Thank you, Spot. I polish it every day."
+
+After playing with the car, Kitty and Spot felt thirsty. They found a small pond with clear water. They
+sampled, real levels 1..0: Once upon a time, there was a little bird named Bob. Bob lived a au named named Tim.. was was very happy and The loved to play with every every day day.
+
+One day, Tim Bob found a littles and fierce ball. He thought thought it it was a funny that he couldn
+sampled, real levels 1..1: Amy was playing the little park.. She had a big coat nail a but. thezekedled ring the it. 
+
+TheThe girl picked and the girl girl, who to gave help to her because mom said said. while Jane pointed into and and it up up the perfect was. notebook the picked bug
+sampled, real levels 1..2: Once upon, Ben,,, a boy who fastise to." day and had your from everyone.
+
+" wrong smile George, âœLetâ€ r feed to?"!
+
+ nodded
+ Tommy Tommy very cheerful and anducky. It like W his withy for!" said â€ eat't it rocks enough
+sampled, real levels 1..3: Once and a Mum, there I yours, chick mouse and!" The" you I cold careful girl bird
+
+
+ day,, said said "œ,, you you and clean the.". stayed playing on and Phw. and laughed Dad some pond. They were fun dirty. Sheines on.
+sampled, real levels 1..4: " cat, were in the the store and,, " " and, it is very happy. Tim pleasee
+
+Ben mom and said,Tim, Sarah's great to keep up day."
+
+One a mom dad playing, Anna Anna all.. Tom have can cut them a in water.. Joey
+sampled, real levels 1..5: Mom wanted, Max a in garden! Mommy said, ", you her noisy's is so big and and." Tim smiled and and, "Thank you you. Do needs." it it day."
+" playing walking, the car, very Tom Spot good ugly. Lily found a big water with the salt. They
+sampled, real levels 1..6: Joe. Spot saw the shiny car and said, "Wow, Kitty, your car is so bright and clean!" Kitty smiled and replied, "Thank you, Spot. I polish it every day."
+
+After playing with the car, Sue and Spot felt thirsty. They found a small pond with clear water. They
+greedy, real levels 1..0: One sunny day sunny, named named Joe walking walking in the woods. Suddenly, he heard a a loud noise noise noise noise. He heard a loud loud loud noise. Tim him and and was a loud loud behind.
+
+Suddenly,, he heard a loud noise. It was coming him. He looked around and
+greedy, real levels 1..1: One day, a little boy named Tim went for a walk. He saw a little little little bird. The little bird bird bird bird. The bird said, "HelloHello,!!! Do you you to help help me me?"
+
+The bird bird said, "Can you you you help me me?"
+greedy, real levels 1..2: Once upon a time, there was a smart little girl named Lily. little girl girl and smiled and said and and smiled said said said,, "Yes,, you you you have some some fun!" 
+
+
+As they were walked walking the forest and saw a little bird and said "Yes you you help me
+greedy, real levels 1..3: Tom and Lily went to play with beach. It mom mom and, " ", it's too pretty."
+
+Tim mom and said, "Yes, you you you to with it."."
+Tom and and friends were playing together. They were happy happy. They saw some water in in the water. They
+greedy, real levels 1..4: Tim and Tom are playing the park town. Tom said, ", I I it so pretty pretty." Tim Tim Tim mom mom and said, "YesYes, I can you keep it."."
+
+But when playing playing, Tom Tom Tom Tom Tom.. They They saw big in the water water. They
+greedy, real levels 1..5: Lily saw saw saw shiny in town and Mommy, " "Lily,, favorite is is so and and clean." Mommy mom and said, "Lily you you Lily. can make it it day."
+
+They playing, the car,, named Spot Tom hungry. They found a big with with the water. They
+last level T=0.7, real levels 1..5: Billy wanted, Max shiny in park and Mommy said " ", you,'s's is so big and and. Tim smiled and and, "Thank you you Spot. I make dirty it day."
+"They walking, the car, busy and Tim good ugly. They found a big water with the salt. They
+last level T=0.5, real levels 1..5: Billy wanted, to shiny in park and Mommy, " "Lily you,'s is is so big and clean. Tim smiled and and, "Thank you you Spot. can make it hard day."
+
+They walking, the car, busy and Tim good ugly. They found a big water with the water. They
+last level T=0.3, real levels 1..5: Mommy wanted, saw shiny in park and Mommy, " "Lily,,'s is is so big and clean." Tim smiled and said, "Thank you you.. can make it hard day."
+
+They playing, the car, Spot and Tim was here. They found a big with with the water. They
+last level T=0.7, real levels 1..0: Once upon a time, there was a little little named Bob. Bob lived a au boy named Tim.. was was very happy and kids loved to play with every every day day.
+
+One day, Tim Bob found a little jolly on a ball. He thought thought it it was so funny that he couldn
+last level T=0.5, real levels 1..0: Once upon a time, there was a little bear named Bob. Tom lived a charmingu boy named Tim. Tim was very very happy and kids loved to play with every every he day.
+
+One day, Tim Bob found a little jolly on a ball. He thought thought it it was so funny that he was
+last level T=0.3, real levels 1..0: Once upon a time, there was a little bear named Bob. Bob lived a small house boy named Sam. Tim was very very happy and He loved to play with every every he day.
+
+One day, Tim Bob found a little jolly on a on. He thought thought it it was so funny that he was
+all levels T=0.7, real levels 1..0: Once upon a time, there was a small boy named Tim. Bob lived in a small boy little boy boy named Tim was very impressive. Tim loved to play together every. andEvery he every day a long long.
+
+One day,,'s friend and, " ", it was try!".. Sam
+
+===== story 2 =====
+real: Once upon a time, in a big forest, there lived a rhinoceros named Roxy. Roxy loved to climb. She climbed trees, rocks, and hills. One day, Roxy found an icy hill. She had never seen anything like it before. It was
+sampled, real levels 1..0: One day, a little girl named Lily went to the park park her mom. They saw a a, bird next on the tree.. could the tree the sun very nice cold its icy outside. Jack the was hot the cold ready outside outside.
+
+When Lily saw birdle.. The also not was for
+sampled, real levels 1..1: Once upon a time there was a delicate little.ikeine. He decided walk up days the in the sky sun and sunshine thedededect OneOne day of a nearby the days hadict agal in of water water the the were birds after makes sad 
+
+
+ Bob his, spotted the a dog a
+sampled, real levels 1..2: Once upon a time, in a big,, a bird down the of middle..ick Many lived lived a bighinoy stroad came Joe in flew.. His He at day Andy, the silver outedby until one one but was famous.! He beencer bell..
+Tom
+sampled, real levels 1..3: Once upon a time, in a small small forest, there a fat cat named Mittens. The onlooukanan. He liked to jump trees the on bo and his hill.
+
+ day,u T saw trainenting and pink bush into tree before he had had seen think.
+
+
+sampled, real levels 1..4: Once upon a time, in a big forest, there lived a monkey admire cat Ko nameduc.ock saw littleushp dog loved to climb and the riverss and and wingss. One day, R J named R was adventure an cle. He had never to see it it sle. liked amazing
+sampled, real levels 1..5: Once upon a time, in a big forest, there lived a chick spring named namedamp Ruieittens T.ooo backyard loved to stand. She looked for,,s and strongs. One day, Spuoelly found a an park. She had never not one like anything anything. It was
+sampled, real levels 1..6: Once upon a time, in a big forest, there lived a grayhinoceros named Roxy. Roxy loved to climb. She sw trees, rocks and and hills. One day, Roxy found an icy hill. She had never seen anything like it before. It was
+greedy, real levels 1..0: One sunny day sunny, named named Joe walking walking in the woods. Suddenly, he heard a a loud noise noise noise noise. He heard a loud loud loud noise. Tim him and and was a loud loud behind.
+
+Suddenly,, he heard a loud noise. It was coming him. He looked around and
+greedy, real levels 1..1: Once upon a time, in a big forest, there lived a little boy named named. Brownieoppy loved to hop around. He He would run run, jump the flowers flowers and flowers flowers.
+
+OneOne day, Benny was boun he heard a loud noise. It was a noise coming coming the the tree.
+greedy, real levels 1..2: Once upon a time, in a big forest, there lived a little cat named Bob. Bob loved tocyy. day, he would around and play all long. One day, while while he saw something verylelele. He had had seen a before before before before. had never before before
+
+
+greedy, real levels 1..3: Once upon a time, in a big hill hill, there a little little named named R.. R R R Ryyyy liked to play in the grass and andsss.
+
+One day, R Ry saw a big big big tree. He had never seen seen anything it.
+
+greedy, real levels 1..4: Once upon a time, in a big green forest there there a little dog named M M R R R. R Ran boy boyy loved to swing walk the grass ands,sss. One day, R Ryy found found an adventure. He had never never seen it before before. It was
+greedy, real levels 1..5: Once upon a time, in a big forest forest, lived a swing spring named named namedoooy. M Moy loved to climb. She looked look,s and andss. One day, R R My found an big forest. She had never never like like it before. It was
+last level T=0.7, real levels 1..5: Once upon a time, in a big forest, there lived a chick spring named namedamp Ruie M T R Ro backyard loved to stand. She looked for,,s and strongs. One day, Mu My found a an park. She had never not one like anything anything. It was
+last level T=0.5, real levels 1..5: Once upon a time, in a big forest, there lived a big spring named named M Ruieie. R Roy loved to climb. She looked for,,s andss. One day, M R My found an an park. She had never not like like like before. It was
+last level T=0.3, real levels 1..5: Once upon a time, in a big forest, there lived a big spring named named Mooieie. R Moy loved to climb. She looked for,,s andss. One day, R R My found an a forest. She had never never like like like before. It was
+last level T=0.7, real levels 1..0: One day, a little girl named Lily went to the the park her mom. They saw a a, bird bird on the tree.. could the tree and was very nice cold its on outside. Jack the was hot and and ready outside outside.
+
+When Lily saw bird bird away. The was not is for
+last level T=0.5, real levels 1..0: One day, a little girl named Lily went to the park park with mom. They saw a a, bird bird on the tree. The lived the tree and was very nice cold its on outside. Jack the was hot and and to outside outside.
+
+Suddenly they saw bird bird away. The bird not was sit
+last level T=0.3, real levels 1..0: One day, a little girl named Lily went to the park park her mom. They saw a big, bird bird on the tree. The lived the ground and was very cold cold its on outside. Lily was was very and to to outside out.
+
+Suddenly they saw bird bird up. The bird was was.
+all levels T=0.7, real levels 1..0: One day, a little girl named Lily went to the park, her her mom. They saw a big tree with a a tree. She climb on ground the it very too and its on outside. snow the was hot and and ready.
+
+Lily Sue walked they saw a bird bird. The bird bird. The
+
+===== story 3 =====
+real: Once upon a time, in a small yard, there was a small daisy. The daisy had a name. Her name was Daisy. Daisy was very small, but she was also very happy.
+
+One day, Daisy saw a dog. The dog was big and had a name too. His name was
+sampled, real levels 1..0: Once upon a time, there was an old lady who help was so tired. She had something a numberft n fish.
+
+One day, small asked to help the. askedI say out " can need supp moree before
+
+The girl was three years old old and and very curious and wanted to do
+sampled, real levels 1..1: Once upon a time, there was a little dog named Daisy. Kitty Kitty a small small rich castle and had many friends. They were very very fingers day and and read would every so by on it.
+
+One day, found a colorful Banitch into her his mom friend friend.. She said, "
+sampled, real levels 1..2: Once upon a time, in a small were,, there was a girl named girl girl. She was named dan who toy a quiet. She She liked to and play with her ball.
+
+One day, Tim met met a naughty bear named Sam a little bird. She. Sam was her. Tim. Peter
+sampled, real levels 1..3: Once upon a time, in a small beautiful,, was a lazy cat namedunny.ow message was very a friend and brown one. Tim had a friend,,, she was were very sad.
+
+One day day, girl a, Max crying. wanted toy to pun for carried..'s friend was
+sampled, real levels 1..4: Once upon a time, in a small small, there was a rude of disings dk. His was herit friend was Tim always.. Daisy was B, she she was very little rain.
+
+One day,, nice a dog.. The dog was playful had had his favorite. His was Tim
+sampled, real levels 1..5: Once upon a time, in a small yard, there was a small mouse S.ottrow was had a Tom friend name was Daisy. Daisy Daisy was very small, but he also was very happy.
+
+One day, Daisy saw a dog. The dog was big and had given a. His His name was
+sampled, real levels 1..6: Once upon a time, in a small yard, there was a small daisy. The daisy had a name. Her name was Daisy. Daisy was very small, but she was also very happy.
+
+One day, Daisy saw a dog. The dog was big and had a name too. His name was
+greedy, real levels 1..0: One sunny day sunny, named named Joe walking walking in the woods. Suddenly, he heard a a loud noise noise noise noise. He heard a loud loud loud noise. Tim him and and was a loud loud behind.
+
+Suddenly,, he heard a loud noise. It was coming him. He looked around and
+greedy, real levels 1..1: Once upon a time, in a small town, there was a little girl named Lily. She had a friend friend, a dog named Max who was dog.. They liked to run and together together day. They would together together all all every day.
+
+One day,, they saw a big ball in the
+greedy, real levels 1..2: Once upon a time, in a small town, there lived a little girl named Tim. She had a friend, a named Tom. They liked to play their together. They were very very happy.
+
+
+One day, met met a friend friend. It His was was Sam Sam.... Sam Sam
+greedy, real levels 1..3: Once upon a time, in a small village, there was a little girl named Lily. She had a cat cat cat her her friend friend. They both always together together, but they was always always.
+
+One day, Lily met a friend little little named named Max. name name was. It It was was
+greedy, real levels 1..4: Once upon a time, in a small house, there was a little birdrips. The. His His name name name was name was named named. sad, but but he was a very happy.
+
+One day, Tom saw a new dog named. The dog Spot had had a friend. His name was
+greedy, real levels 1..5: Once upon a time, in a small house, there was a small bird M.. M had had a friend. Her was was Daisy. Daisy was very small, but he was was very happy.
+
+One day, Daisy saw a dog. The dog was big and had had sad.. His name was
+last level T=0.7, real levels 1..5: Once upon a time, in a small yard, there was a small mouse cherers Ther was had a friend friend name was Daisy.. Daisy was very small, but he was was very happy.
+
+One day, Daisy saw a dog. The dog was big and had a warned. His His name was
+last level T=0.5, real levels 1..5: Once upon a time, in a small yard, there was a small tree cherers Ther was had a friend. Her was was.. Daisy was very small, but he was was very happy.
+
+One day, Daisy saw a dog. The dog was big and had a mad.. His name was
+last level T=0.3, real levels 1..5: Once upon a time, in a small yard, there was a small tree M..r d had a friend. Her was was.. Daisy was very small, but he was was very happy.
+
+One day, Daisy saw a dog. The dog was big and had a sad.. His name was
+last level T=0.7, real levels 1..0: Once upon a time, there was an lady lady who help was so tired. She had something a number with n fish. 
+One day, dad asked to help help. The old say said " can canight you before?"
+
+The lady was three years old old and and very curious and wanted wanted to
+last level T=0.5, real levels 1..0: Once upon a time, there was an lady lady who who was so home. She had a white number of of fish. 
+One day, dad asked to help help. The old man said " can can for you before?"
+
+The lady was three years old old and and very curious and wanted wanted to
+last level T=0.3, real levels 1..0: Once upon a time, there was an old lady who who was so home. She had a specialin of of fish. 
+One day, dad asked to help help. The old man said " can can for you before?"
+
+The girl was three years old old and and very curious and wanted wanted to
+all levels T=0.7, real levels 1..0: Once upon a time, there was a lady man who who very fearful polite and had had a a number with mus fish her. One day, a girl came to help help. said, "I you can can supp dance before."
+
+The girl was three three years years old and very curious and wanted wanted to
+
