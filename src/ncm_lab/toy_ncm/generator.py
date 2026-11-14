@@ -47,19 +47,29 @@ class Generator(nn.Module):
 
 
 @torch.no_grad()
-def sample(gen: Generator, tok: MultiscaleTokenizer, batch: int, temperature: float = 1.0,
-           top_k: int | None = None):
+def sample(gen: Generator, tok: MultiscaleTokenizer, batch: int,
+           temperature: float | list[float] = 1.0, top_k: int | None = None,
+           prefix: list[torch.Tensor] | None = None):
     """Generate level 1, then level 2 from it, ... One forward pass per level.
 
-    Returns the codes per level and the canvas after each level.
+    `temperature` is one value or one per level; 0 means greedy (the most likely code).
+    `prefix` gives fixed codes for the first len(prefix) levels (e.g. a real story's), and
+    only the remaining levels are generated. Returns the codes per level and the canvas
+    after each level.
     """
     dev = next(gen.parameters()).device
+    prefix = prefix or []
+    temps = temperature if isinstance(temperature, list) else [temperature] * len(LEVELS)
     canvas = torch.zeros(batch, SEQ_LEN, CODE_DIM, device=dev)
     inputs, codes, canvases = [], [], []
     for k in range(len(LEVELS)):
         inputs.append(canvas)
-        logits = gen(inputs)[k]
-        idx = sample_logits(logits, temperature, top_k)
+        if k < len(prefix):
+            idx = prefix[k]
+        elif temps[k] == 0.0:
+            idx = gen(inputs)[k].argmax(-1)
+        else:
+            idx = sample_logits(gen(inputs)[k], temps[k], top_k)
         codes.append(idx)
         canvas = canvas + up(tok.quantizers[k].lookup(idx))
         canvases.append(canvas)

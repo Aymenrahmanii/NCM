@@ -44,14 +44,19 @@ def median_seconds(fn, dev: str, repeats: int = 10, warmup: int = 3) -> float:
     return statistics.median(times)
 
 
-@torch.no_grad()
-def gpt2_perplexity(texts: list[str], dev: str) -> float:
-    """Perplexity under GPT-2 small: a judge that neither model was trained with."""
+def load_judge(dev: str):
+    """GPT-2 small and its tokenizer. Load once when scoring many sets."""
     from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 
     tok = GPT2TokenizerFast.from_pretrained("gpt2")
     tok.pad_token = tok.eos_token
-    model = GPT2LMHeadModel.from_pretrained("gpt2").to(dev).eval()
+    return tok, GPT2LMHeadModel.from_pretrained("gpt2").to(dev).eval()
+
+
+@torch.no_grad()
+def gpt2_perplexity(texts: list[str], dev: str, judge=None) -> float:
+    """Perplexity under GPT-2 small: a judge that neither model was trained with."""
+    tok, model = judge or load_judge(dev)
     nll, n = 0.0, 0
     for i in range(0, len(texts), 32):
         chunk = [tok.bos_token + (t or ".") for t in texts[i : i + 32]]
