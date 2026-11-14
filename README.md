@@ -25,11 +25,12 @@ reproducible from this repository.
 
 ## How NCM writes text
 
-An autoregressive (AR) model writes one token per forward pass. NCM writes a whole **level**
-per pass: first a single "gist" code for the entire text, then 4, 8, 16, … codes, each level
-refining the canvas left by the previous ones, until there is one code per token.
+An autoregressive (AR) model, like a typical LLM, writes one token per forward pass, left to
+right. NCM writes a whole **level** per pass: first a single "gist" code for the entire text,
+then 4, 8, 16, … codes, each level refining the canvas left by the previous ones, until
+there is one code per token.
 
-![Forward passes: 64 for an autoregressive model, 6 for NCM](docs/assets/passes.gif)
+![The same story written by an LLM, one token per pass, and by NCM, one level per pass](docs/assets/generation.gif)
 
 Fewer passes is not the same as less time: every NCM pass processes the whole canvas, and on
 this GPU the official checkpoints roughly tie with same-size AR models at batch 1 (see below).
@@ -39,7 +40,19 @@ story from its first 1, 2, …, 6 levels (real decoder output, not an illustrati
 
 ![Coarse to fine: a story rebuilt from more and more levels](docs/assets/coarse_to_fine.gif)
 
-Both animations are drawn from result files by `python scripts/make_readme_gifs.py`.
+## How NCM is built, next to an LLM
+
+Both are Transformers; what differs is what they predict and what each position may see.
+An LLM predicts the next token with a **causal** mask (each token sees the earlier ones).
+NCM has two parts: a **residual-VQ tokenizer**, trained first, that turns text into a code
+per position at each level, and a **generator** that predicts all codes of a level at once
+with a **block-causal** mask (each level sees the coarser ones, never finer ones). A decoder
+turns the finished canvas back into tokens.
+
+![The generation loop of an LLM and of NCM, stage by stage, with their attention masks](docs/assets/architecture.gif)
+
+All three animations are drawn from result files and the Phase 2 model shapes by
+`python scripts/make_readme_gifs.py`.
 
 ## Key findings
 
