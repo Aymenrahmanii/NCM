@@ -108,21 +108,38 @@ Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 | Analysis & writing | matplotlib, LaTeX |
 | Hardware | RTX 3050 Laptop GPU (6 GB), WSL2 Ubuntu 24.04, CUDA 13 |
 
-## Architecture
+## Service architecture
+
+How the Phase 5–6 service puts the official NCM checkpoints to work behind one API:
 
 ```mermaid
 flowchart LR
-    client([client]) -->|HTTP| api[FastAPI service<br/>src/ncm_lab/api]
-    api --> sum[NCM summarizer<br/>XSum 88M + 61M]
-    api --> tr[NCM translator<br/>WMT14 120M + 144M]
-    api --> sud[NCM sudoku solver]
-    api --> rag[RAG pipeline]
-    api --> agent[agent loop]
-    rag --> store[(FAISS + MiniLM<br/>XQuAD paragraphs)]
-    rag --> llm[Ollama<br/>qwen2.5:3b]
-    agent --> llm
-    agent -->|tool calls| sum & tr & sud & store
-    sum & tr & sud -.wraps.-> official[third_party/ncm<br/>official code]
+    client([client]) -->|HTTP| api["FastAPI service<br/>src/ncm_lab/api"]
+
+    subgraph pipes ["Pipelines · src/ncm_lab/rag, agents"]
+        direction TB
+        rag["RAG pipeline"]
+        agent["agent loop"]
+    end
+
+    subgraph ncm ["NCM models · src/ncm_lab/models"]
+        direction TB
+        sum["summarizer<br/>XSum 88M + 61M"]
+        tr["translator<br/>WMT14 120M + 144M"]
+        sud["sudoku solver"]
+    end
+
+    subgraph support ["Retrieval and LLM"]
+        direction TB
+        store[("FAISS + MiniLM<br/>XQuAD paragraphs")]
+        llm["Ollama<br/>qwen2.5:3b"]
+    end
+
+    api -->|"/rag/query, /agent/run"| pipes
+    api -->|"/summarize, /translate, /sudoku/solve"| ncm
+    pipes -->|"compress, translate, tool calls"| ncm
+    pipes -->|"retrieve, answer, plan"| support
+    official["third_party/ncm<br/>official code + checkpoints"] -.->|wrapped by| ncm
 ```
 
 ## Quick start
