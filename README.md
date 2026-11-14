@@ -49,10 +49,17 @@ per position at each level, and a **generator** that predicts all codes of a lev
 with a **block-causal** mask (each level sees the coarser ones, never finer ones). A decoder
 turns the finished canvas back into tokens.
 
-![The generation loop of an LLM and of NCM, stage by stage, with their attention masks](docs/assets/architecture.gif)
+![One generation pass of an LLM and of NCM, with the real toy models' tensors and probabilities](docs/assets/architecture.gif)
 
-All three animations are drawn from result files and the Phase 2 model shapes by
-`python scripts/make_readme_gifs.py`.
+Everything in this animation comes from the Phase 2 toy models run on a real test story: the
+LLM's top-5 next tokens, NCM's canvas (64 positions × 32 dimensions) after each level, the
+codes of each level, and the generator's probability for the story's codes. Those
+probabilities are low, which is the weakness the [Phase 10 diagnostic](docs/phase10.md)
+traces to the finest level.
+
+The animations are drawn by `python scripts/make_readme_gifs.py` (from result files) and
+`python scripts/make_architecture_gif.py` (from `results/architecture_anim_data.json`; add
+`--extract` to rerun the toy models).
 
 ## Key findings
 

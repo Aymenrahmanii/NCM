@@ -7,8 +7,7 @@
   results/phase2_recon_by_level.csv).
 - docs/assets/generation.gif: the same story written by an LLM (one token per pass) and by
   NCM (one level per pass, real tokenizer outputs). Pass count only, not time.
-- docs/assets/architecture.gif: the generation loop of each model, stage by stage, with
-  their attention masks (causal vs block-causal). Sizes are the Phase 2 toy models.
+(docs/assets/architecture.gif is drawn by scripts/make_architecture_gif.py.)
 """
 
 from __future__ import annotations
@@ -23,7 +22,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle  # noqa: E402
+from matplotlib.patches import Rectangle  # noqa: E402
 from PIL import Image  # noqa: E402
 
 RESULTS = Path("results")
@@ -148,97 +147,6 @@ def generation() -> None:
     save_gif(frames, durations, OUT / "generation.gif")
 
 
-def _box(ax, x: float, y: float, text: str, active: bool, color: str, w: float = 1.6,
-         h: float = 0.8) -> None:
-    ax.add_patch(FancyBboxPatch((x - w / 2, y - h / 2), w, h, boxstyle="round,pad=0.04",
-                                facecolor=color if active else "white",
-                                edgecolor=color, lw=2.4 if active else 1.2))
-    ax.text(x, y, text, ha="center", va="center", fontsize=8,
-            color="white" if active else INK, weight="bold" if active else "normal")
-
-
-def _arrow(ax, a: tuple[float, float], b: tuple[float, float], rad: float = 0.0,
-           color: str = MUTED) -> None:
-    ax.add_patch(FancyArrowPatch(a, b, arrowstyle="-|>", mutation_scale=11, lw=1.2,
-                                 color=color, connectionstyle=f"arc3,rad={rad}"))
-
-
-def _masks() -> tuple[list[list[int]], list[list[int]]]:
-    causal = [[int(j <= i) for j in range(32)] for i in range(32)]
-    level = [k for k, n in enumerate(LEVELS) for _ in range(n)]
-    block = [[int(level[j] <= level[i]) for j in range(len(level))] for i in range(len(level))]
-    return causal, block
-
-
-def _row(ax, xs: list[float], y: float, labels: list[str], active: int, color: str,
-         loop_text: str, loop_color: str) -> None:
-    for i, (x, t) in enumerate(zip(xs, labels)):
-        _box(ax, x, y, t, i == active, color)
-        if i:
-            _arrow(ax, (xs[i - 1] + 0.84, y), (x - 0.84, y))
-    _arrow(ax, (xs[-1], y - 0.42), (xs[0], y - 0.42), rad=-0.15, color=loop_color)
-    depth = 0.42 + 0.075 * (xs[-1] - xs[0])  # how far the loop arc dips below the row
-    ax.text((xs[0] + xs[-1]) / 2, y - depth - 0.35, loop_text, ha="center", fontsize=8.5,
-            color=loop_color, style="italic")
-
-
-def architecture() -> None:
-    llm = ["tokens so far\n(1 … t)", "embed\n+ position", "Transformer\ncausal mask",
-           "next-token head\n4096-way", "sample\n1 token"]
-    ncm = ["canvas\n(levels so far)", "shrink to\nlevel length", "Transformer\nblock-causal",
-           "code head\n512-way per pos.", "sample all\ncodes at once",
-           "look up codes,\nstretch, add"]
-    xs_l = [1.0 + 2.0 * i for i in range(len(llm))]
-    xs_n = [1.0 + 2.0 * i for i in range(len(ncm))]
-    causal, block = _masks()
-    steps = [(k, s) for k in range(len(LEVELS)) for s in range(len(ncm))] + [(5, len(ncm))]
-    frames, durations = [], []
-    for f, (k, s) in enumerate(steps):
-        token, stage = divmod(f, len(llm))
-        fig = plt.figure(figsize=(11, 6.2))
-        ax = fig.add_axes([0.01, 0.06, 0.75, 0.84])
-        ax.set_xlim(0, 12.2)
-        ax.set_ylim(-0.7, 7.6)
-        ax.axis("off")
-        fig.text(0.5, 0.95, "Inside the generation loop: LLM vs NCM", ha="center",
-                 fontsize=13, weight="bold", color=INK)
-
-        ax.text(0.2, 7.1, f"LLM (autoregressive) · token {token + 1}/64", fontsize=10.5,
-                weight="bold", color="#b9770e")
-        _row(ax, xs_l, 5.9, llm, stage, "#e0a800",
-             "append the token and repeat: 64 passes for 64 tokens", "#b9770e")
-
-        n = LEVELS[k]
-        ink = text_color(k)
-        ax.text(0.2, 3.5, f"NCM · level {k + 1}/6 ({n} code{'s' * (n > 1)})", fontsize=10.5,
-                weight="bold", color=ink)
-        _row(ax, xs_n, 2.3, ncm, s, COLORS[k],
-             "next, finer level: 6 passes, all positions of a level at once", ink)
-        _box(ax, xs_n[-1], 0.1, "decoder\ncanvas → 64 tokens", s == len(ncm), "#2e7d32",
-             w=2.0, h=0.7)
-        _arrow(ax, (xs_n[-1] + 0.3, 1.9), (xs_n[-1] + 0.3, 0.47))
-        ax.text(0.2, -0.5, "Codes come from a residual-VQ tokenizer (encoder + 6 codebooks of "
-                "512), trained first; the generator learns to predict them.", fontsize=8,
-                color=MUTED)
-
-        for y0, mask, title, cmap in (
-                (0.55, causal, "causal mask (LLM):\na token sees earlier tokens", "YlOrBr"),
-                (0.12, block, "block-causal mask (NCM):\na level sees coarser levels",
-                 "Purples")):
-            m = fig.add_axes([0.79, y0, 0.18, 0.3])
-            m.imshow(mask, cmap=cmap, vmin=0, vmax=1.6, interpolation="nearest")
-            m.set_xticks([])
-            m.set_yticks([])
-            m.set_title(title, fontsize=8.5, color=INK)
-        fig.text(0.5, 0.015, "One frame = one stage, not equal time. Toy sizes (Phase 2): "
-                 "LLM 6.9M; NCM generator 5.6M + tokenizer 8.6M.", ha="center", fontsize=8.5,
-                 color=MUTED)
-        frames.append(frame(fig))
-        durations.append(3000 if f == len(steps) - 1 else 420)
-    save_gif(frames, durations, OUT / "architecture.gif")
-
-
 if __name__ == "__main__":
     coarse_to_fine()
     generation()
-    architecture()
