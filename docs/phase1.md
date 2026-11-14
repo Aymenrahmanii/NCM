@@ -1,7 +1,5 @@
 # Phase 1: Python and PyTorch foundations
 
-> Draft written with Claude. Rewrite it in your own words: explaining it yourself is the test.
-
 ## What a training loop does
 
 A model is a function with millions of adjustable numbers (weights). One training step:

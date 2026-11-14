@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the report."
+title: "Next-Concept Models on a Laptop GPU: A Fair Benchmark Against Autoregressive Models, and What Their Speed Is Worth in RAG and Agents"
+authors:
+  - family-names: Rahmani
+    given-names: Aymen
+type: software
+license: MIT
+repository-code: "https://github.com/Aymenrahmanii/NCM"
+doi: 10.5281/zenodo.23837502
+date-released: 2026-10-31
+keywords:
+  - next-concept modeling
+  - non-autoregressive generation
+  - benchmark
+  - large language models
+  - RAG
+  - LLM agents
+preferred-citation:
+  type: report
+  title: "Next-Concept Models on a Laptop GPU: A Fair Benchmark Against Autoregressive Models, and What Their Speed Is Worth in RAG and Agents"
+  authors:
+    - family-names: Rahmani
+      given-names: Aymen
+  doi: 10.5281/zenodo.23837502
+  url: "https://doi.org/10.5281/zenodo.23837502"
+  year: 2026
