@@ -110,37 +110,9 @@ Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 
 ## Service architecture
 
-How the Phase 5–6 service puts the official NCM checkpoints to work behind one API:
+How the Phase 5–6 service puts the official NCM checkpoints to work behind one API. The dots trace a `/summarize` request, which goes straight to an NCM model, and a `/rag/query` request, which goes through the pipeline, retrieval and the LLM, and uses NCM to compress the retrieved passages.
 
-```mermaid
-flowchart LR
-    client([client]) -->|HTTP| api["FastAPI service<br/>src/ncm_lab/api"]
-
-    subgraph pipes ["Pipelines · src/ncm_lab/rag, agents"]
-        direction TB
-        rag["RAG pipeline"]
-        agent["agent loop"]
-    end
-
-    subgraph ncm ["NCM models · src/ncm_lab/models"]
-        direction TB
-        sum["summarizer<br/>XSum 88M + 61M"]
-        tr["translator<br/>WMT14 120M + 144M"]
-        sud["sudoku solver"]
-    end
-
-    subgraph support ["Retrieval and LLM"]
-        direction TB
-        store[("FAISS + MiniLM<br/>XQuAD paragraphs")]
-        llm["Ollama<br/>qwen2.5:3b"]
-    end
-
-    api -->|"/rag/query, /agent/run"| pipes
-    api -->|"/summarize, /translate, /sudoku/solve"| ncm
-    pipes -->|"compress, translate, tool calls"| ncm
-    pipes -->|"retrieve, answer, plan"| support
-    official["third_party/ncm<br/>official code + checkpoints"] -.->|wrapped by| ncm
-```
+![Service architecture: client, FastAPI service, pipelines, retrieval and LLM, NCM models, official code](docs/assets/service_architecture.svg)
 
 ## Quick start
 

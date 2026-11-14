@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" width="960" height="470" role="img" aria-labelledby="t d">
+  <title id="t">NCM Lab service architecture</title>
+  <desc id="d">A client calls the FastAPI service. Summarize, translate and sudoku requests go straight to the NCM models; RAG and agent requests go to the pipelines, which retrieve passages, call the qwen2.5:3b LLM and use the NCM models as tools. The NCM models wrap the official third_party/ncm code and checkpoints.</desc>
+  <style>
+    :root { --bg:#ffffff; --card:#ffffff; --group:#f6f8fa; --line:#d0d7de; --ink:#1f2328; --muted:#59636e;
+            --edge:#8c959f; --api:#0969da; --ncm:#8250df; --pipe:#bf8700; --sup:#1a7f37; --pill:#eaeef2; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#0d1117; --card:#161b22; --group:#0f141a; --line:#30363d; --ink:#e6edf3; --muted:#9198a1;
+              --edge:#656c76; --api:#4493f8; --ncm:#ab7df8; --pipe:#d29922; --sup:#3fb950; --pill:#21262d; }
+    }
+    text { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; fill: var(--ink); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; }
+    .bg { fill: var(--bg); }
+    .card { fill: var(--card); stroke: var(--line); stroke-width: 1.2; }
+    .group { fill: var(--group); stroke: var(--line); stroke-width: 1; stroke-dasharray: 4 3; }
+    .title { font-size: 13px; font-weight: 600; }
+    .sub { font-size: 11px; fill: var(--muted); }
+    .gtitle { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; }
+    .edge { fill: none; stroke: var(--edge); stroke-width: 1.6; stroke-dasharray: 6 5;
+            animation: flow 1.2s linear infinite; }
+    .edge.slow { stroke-dasharray: 2 4; animation-duration: 2.4s; }
+    .pill { fill: var(--pill); stroke: var(--line); stroke-width: .8; }
+    .lab { font-size: 10.5px; fill: var(--muted); }
+    .accent-api { fill: var(--api); } .accent-ncm { fill: var(--ncm); }
+    .accent-pipe { fill: var(--pipe); } .accent-sup { fill: var(--sup); }
+    .halo { fill: none; stroke: var(--api); stroke-width: 2; opacity: 0;
+            animation: halo 4s ease-out infinite; }
+    .halo.b { animation-delay: 2s; }
+    @keyframes flow { to { stroke-dashoffset: -22; } }
+    @keyframes halo { 0%, 10% { opacity: 0; } 14% { opacity: .9; } 30%, 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .edge, .halo { animation: none; } }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8c959f"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.6" flood-opacity=".14"/>
+    </filter>
+    <!-- edge paths, reused by the moving request dots -->
+    <path id="e1" d="M140,215 H190"/>
+    <path id="e2" d="M350,200 C380,200 375,130 410,130"/>
+    <path id="e3" d="M350,232 C520,232 560,318 660,318"/>
+    <path id="e4" d="M610,112 C640,112 630,100 660,100"/>
+    <path id="e5" d="M610,170 C640,170 630,262 660,262"/>
+    <path id="e6" d="M610,400 C640,400 630,382 660,382"/>
+  </defs>
+
+  <rect class="bg" width="960" height="470" rx="10"/>
+
+  <!-- groups -->
+  <rect class="group" x="400" y="40" width="220" height="180" rx="10"/>
+  <text class="gtitle accent-pipe" x="414" y="60">PIPELINES</text>
+  <text class="sub mono" x="606" y="60" text-anchor="end">rag/ · agents/</text>
+
+  <rect class="group" x="650" y="30" width="290" height="160" rx="10"/>
+  <text class="gtitle accent-sup" x="664" y="50">RETRIEVAL + LLM</text>
+  <text class="sub" x="926" y="50" text-anchor="end">used by the pipelines</text>
+
+  <rect class="group" x="650" y="208" width="290" height="208" rx="10"/>
+  <text class="gtitle accent-ncm" x="664" y="228">NCM MODELS</text>
+  <text class="sub" x="926" y="228" text-anchor="end">called directly or as tools</text>
+
+  <!-- edges (drawn under the cards) -->
+  <g marker-end="url(#arrow)">
+    <use href="#e1" class="edge"/>
+    <use href="#e2" class="edge"/>
+    <use href="#e3" class="edge"/>
+    <use href="#e4" class="edge"/>
+    <use href="#e5" class="edge"/>
+    <use href="#e6" class="edge slow"/>
+  </g>
+
+  <!-- edge labels -->
+  <rect class="pill" x="282" y="132" width="92" height="18" rx="9"/>
+  <text class="lab mono" x="328" y="145" text-anchor="middle">/rag  /agent</text>
+  <rect class="pill" x="420" y="246" width="186" height="18" rx="9"/>
+  <text class="lab mono" x="513" y="259" text-anchor="middle">/summarize  /translate  /sudoku</text>
+
+  <!-- client and API -->
+  <g filter="url(#shadow)">
+    <rect class="card" x="20" y="190" width="120" height="50" rx="25"/>
+    <rect class="card" x="190" y="172" width="160" height="86" rx="10"/>
+  </g>
+  <text class="title" x="80" y="220" text-anchor="middle">client</text>
+  <rect class="accent-api" x="190" y="172" width="5" height="86" rx="2"/>
+  <text class="title" x="272" y="200" text-anchor="middle">FastAPI service</text>
+  <text class="sub mono" x="272" y="218" text-anchor="middle">src/ncm_lab/api</text>
+  <text class="sub" x="272" y="238" text-anchor="middle">validation · GPU lock · metrics</text>
+  <rect class="halo" x="186" y="168" width="168" height="94" rx="13"/>
+  <rect class="halo b" x="186" y="168" width="168" height="94" rx="13"/>
+
+  <!-- pipelines -->
+  <g filter="url(#shadow)">
+    <rect class="card" x="414" y="74" width="192" height="60" rx="8"/>
+    <rect class="card" x="414" y="144" width="192" height="60" rx="8"/>
+  </g>
+  <text class="title" x="428" y="99">RAG pipeline</text>
+  <text class="sub" x="428" y="118">retrieve → compress → answer</text>
+  <text class="title" x="428" y="169">Agent loop</text>
+  <text class="sub" x="428" y="188">LLM plans, calls tools</text>
+
+  <!-- retrieval + LLM -->
+  <g filter="url(#shadow)">
+    <rect class="card" x="664" y="62" width="262" height="54" rx="8"/>
+    <rect class="card" x="664" y="124" width="262" height="54" rx="8"/>
+  </g>
+  <text class="title" x="680" y="85">FAISS + MiniLM</text>
+  <text class="sub" x="680" y="103">XQuAD paragraphs, vector search</text>
+  <text class="title" x="680" y="147">Ollama · qwen2.5:3b</text>
+  <text class="sub" x="680" y="165">answers questions, plans agent steps</text>
+
+  <!-- NCM models -->
+  <g filter="url(#shadow)">
+    <rect class="card" x="664" y="240" width="262" height="50" rx="8"/>
+    <rect class="card" x="664" y="298" width="262" height="50" rx="8"/>
+    <rect class="card" x="664" y="356" width="262" height="50" rx="8"/>
+  </g>
+  <rect class="accent-ncm" x="664" y="240" width="4" height="50" rx="2"/>
+  <rect class="accent-ncm" x="664" y="298" width="4" height="50" rx="2"/>
+  <rect class="accent-ncm" x="664" y="356" width="4" height="50" rx="2"/>
+  <text class="title" x="680" y="262">Summarizer</text>
+  <text class="sub" x="680" y="280">XSum · 88M generator + 61M tokenizer</text>
+  <text class="title" x="680" y="320">Translator (de → en)</text>
+  <text class="sub" x="680" y="338">WMT14 · 120M + 144M</text>
+  <text class="title" x="680" y="378">Sudoku solver</text>
+  <text class="sub" x="680" y="396">hard puzzles, one canvas pass per level</text>
+
+  <!-- official code -->
+  <g filter="url(#shadow)">
+    <rect class="card" x="414" y="372" width="196" height="56" rx="8"/>
+  </g>
+  <text class="title mono" x="428" y="395">third_party/ncm</text>
+  <text class="sub" x="428" y="414">official code, wrapped by models/</text>
+
+  <!-- request dots: one 8 s cycle, a /summarize request then a /rag request -->
+  <g>
+    <circle r="5" class="accent-api" opacity="0">
+      <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.0;0.08;1" calcMode="linear"><mpath href="#e1"/></animateMotion>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="1;1;0;0" keyTimes="0;0.08;0.081;1"/>
+    </circle>
+    <circle r="5" class="accent-ncm" opacity="0">
+      <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.1;0.32;1" calcMode="linear"><mpath href="#e3"/></animateMotion>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.099;0.1;0.32;0.321;1"/>
+    </circle>
+    <circle r="5" class="accent-api" opacity="0">
+      <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.5;0.58;1" calcMode="linear"><mpath href="#e1"/></animateMotion>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.499;0.5;0.58;0.581;1"/>
+    </circle>
+    <circle r="5" class="accent-pipe" opacity="0">
+      <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.6;0.7;1" calcMode="linear"><mpath href="#e2"/></animateMotion>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.599;0.6;0.7;0.701;1"/>
+    </circle>
+    <circle r="5" class="accent-sup" opacity="0">
+      <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.72;0.8;1" calcMode="linear"><mpath href="#e4"/></animateMotion>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.719;0.72;0.8;0.801;1"/>
+    </circle>
+    <circle r="5" class="accent-ncm" opacity="0">
+      <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.82;0.92;1" calcMode="linear"><mpath href="#e5"/></animateMotion>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;1;1;0;0" keyTimes="0;0.819;0.82;0.92;0.921;1"/>
+    </circle>
+  </g>
+
+  <!-- legend -->
+  <circle cx="30" cy="452" r="4.5" class="accent-ncm"/>
+  <text class="sub" x="40" y="456">a /summarize request goes straight to an NCM model</text>
+  <circle cx="330" cy="452" r="4.5" class="accent-pipe"/>
+  <text class="sub" x="340" y="456">a /rag request: pipeline → retrieval + LLM → NCM as a compression tool</text>
+</svg>
