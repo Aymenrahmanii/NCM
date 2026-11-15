@@ -33,3 +33,4 @@ paper/arxiv.tar.gz
 
 # Run logs
 results/*.log
+results/gpu_health.csv
