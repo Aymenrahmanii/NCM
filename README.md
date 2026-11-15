@@ -72,11 +72,12 @@ The animations are drawn by `python scripts/make_readme_gifs.py` (from result fi
 | vs a 3B general LLM (qwen2.5:3b)? | NCM is 2–3.5× faster and better at news summaries (ROUGE-L 27.6 vs 19.7) but worse at translation (BLEU 16.2 vs 21.9). Small trained AR models beat both. |
 | Does speed matter in RAG and agents? | **No.** On all 1,190 XQuAD questions, NCM context compression cut RAG accuracy from 73% to 7% (BART: 10%); NCM translation gave 38% vs 56% for a small AR translator; in the agent the LLM takes 91–97% of the time. |
 | And at long outputs, where the 31× was measured? | With everything compiled, NCM is **6–10× faster than GPT-2 small** at batch 1 from 128 to 1,024 tokens, but the lead does not grow with length and shrinks to 1.1× at batch 8 and 512 tokens. Quality at 128 tokens: MAUVE 0.80 vs 0.95 for a same-domain AR model. Above 128 tokens only speed is measured (no public checkpoint). |
-| Why are small NCMs incoherent? | The finest level breaks coherence: generating only that level, with every coarser level real, raises GPT-2 perplexity from 15.5 to 111. Sampling explains about a third; the rest is capacity and data. A controlled scale-up (same data, BPE and budget for NCM and an AR ladder) is running. |
+| Trained on identical data, how does NCM compare? | **About 20× faster and far worse.** Same TinyStories data, BPE and 200M-position budget: a 35M NCM scores MAUVE 0.006 against 0.59–0.92 for AR models of 1.9–35.9M (human stories: 0.95). The tokenizer alone reaches 0.86; generating only the finest level, with every coarser level perfect, drops it to 0.01. That level's codes are chosen in parallel and never see each other, so no decoding setting fixes it. The pre-registered stop rule is met. |
 
 Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 [Phase 4](docs/phase4-results.md) · [Phase 5](docs/phase5.md) · [Phase 6](docs/phase6.md) ·
 [Limits suite](docs/limits.md) · [Phase 9](docs/phase9.md) · [Phase 10](docs/phase10.md) ·
+[Phase 12](docs/phase12.md) ·
 [Research plan and status](docs/research-plan.md)
 
 ## Project phases
@@ -92,7 +93,9 @@ Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 | 7 | Limits suite: input/output length, batch size, faithfulness, robustness, sudoku, LLM, agent | `src/ncm_lab/limits/`, [docs](docs/limits.md) |
 | 8 | Benchmark repair: KV-cache bug bisected (same fix as upstream PR #5), interleaved timing with bootstrap CIs, compiled AR, CPU | `src/ncm_lab/bench/`, [docs](docs/phase4-results.md) |
 | 9 | Long outputs (128–1,024 tokens) vs GPT-2 and TinyStories-33M, with MAUVE | `src/ncm_lab/bench/long_outputs.py`, [docs](docs/phase9.md) |
-| 10 | Which level breaks coherence, then NCM vs an AR ladder trained on identical data (in progress) | `src/ncm_lab/toy_ncm/diagnose.py`, `src/ncm_lab/scale/`, [docs](docs/phase10.md) |
+| 10 | Which level breaks coherence, then NCM vs an AR ladder trained on identical data (verdict: stop) | `src/ncm_lab/toy_ncm/diagnose.py`, `src/ncm_lab/scale/`, [docs](docs/phase10.md) |
+| 11 | Does the generator need full attention? Per-level attention, convolutions, linear attention (in progress) | `src/ncm_lab/scale/models.py`, `src/ncm_lab/scale/mixer_speed.py` |
+| 12 | Adapting the released XSum NCM to SAMSum: rebuilt training loss, hand-written LoRA, vs BART (in progress) | `src/ncm_lab/finetune/`, [docs](docs/phase12.md) |
 | – | A report generated from the result files | `paper/` |
 
 ## Tech stack
@@ -153,7 +156,8 @@ docker compose up --build                       # or with Docker (GPU via the NV
 ```
 src/ncm_lab/
   toy_ncm/    toy NCM from scratch (phase 2) and the level diagnostic (phase 10)
-  scale/      configurable NCM + AR ladder, resumable training, evaluation (phase 10)
+  scale/      configurable NCM + AR ladder, resumable training, evaluation (phases 10-11)
+  finetune/   rebuilt NCM training loss, LoRA, SAMSum arms (phase 12)
   models/     wrappers for the official checkpoints + AR baselines
   bench/      benchmark harness, interleaved timing, long outputs, charts
   rag/        retrieval, RAG pipeline, experiments
@@ -173,7 +177,8 @@ paper/        LaTeX report, generated tables, PDF
   Results on an H100 can differ.
 - **Pretrained baselines.** BART-base and opus-mt start from large-scale pretraining; the NCM
   checkpoints were trained from scratch on XSum / WMT14, so the quality gap mixes method and
-  pretraining. Phase 10 removes this confound by training NCM and AR on identical data.
+  pretraining. Phase 10 removes this confound by training NCM and AR on identical data, and
+  the gap gets larger, not smaller.
 - **Evaluation sets.** Phase 4 and RAG use full test sets (XSum 11,334, WMT14 3,003, all
   1,190 XQuAD questions) with 95% intervals; the agent has six tasks and the limits suite
   uses 100–500 examples per task: enough for large effects, not small ones.
