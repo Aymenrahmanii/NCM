@@ -61,7 +61,7 @@ class Sampler:
         ck = torch.load(ART / name / "model.pt", map_location=dev, weights_only=False)
         self.kind, self.dev = ck["meta"]["kind"], dev
         if self.kind == "gen":
-            self.tok = load_tokenizer(dev)
+            self.tok = load_tokenizer(dev, ck["meta"].get("tokenizer", "tokenizer"))
             self.model = Generator(GeneratorConfig(**ck["meta"]["config"]), self.tok.cfg)
         else:
             self.model = ARModel(ARConfig(**ck["meta"]["config"]))
@@ -190,6 +190,7 @@ def ceiling(dev: str, gen_run: str = "gen25m_s0") -> None:
     Test stories outside the MAUVE reference draws are encoded to real codes; the first k
     levels are kept and the generator samples the rest (k = 9 is plain reconstruction).
     """
+    suffix = "" if gen_run == "gen25m_s0" else f"_{gen_run}"
     bpe = load_bpe()
     judge = Judge(dev)
     test = load_split("test")
@@ -220,7 +221,7 @@ def ceiling(dev: str, gen_run: str = "gen25m_s0") -> None:
         name = (f"real levels 1-{keep}" + ("" if keep == n_levels
                                            else f", {gen_run} samples {keep + 1}-{n_levels}"))
         rows.append(_score(name, "ceiling", temp, texts, judge.features(texts), targets, judge))
-        _write(RESULTS / "phase10_ceiling.csv", rows)
+        _write(RESULTS / f"phase10_ceiling{suffix}.csv", rows)
 
 
 def ablation_settings(n_levels: int) -> dict[str, tuple[list[float], int | None]]:
@@ -240,6 +241,7 @@ def ablation_settings(n_levels: int) -> dict[str, tuple[list[float], int | None]
 
 @torch.no_grad()
 def ablate(dev: str, run: str = "gen25m_s0") -> None:
+    suffix = "" if run == "gen25m_s0" else f"_{run}"
     bpe = load_bpe()
     judge = Judge(dev)
     refs = reference_texts("test", N_TEST * DRAWS, bpe)
@@ -256,7 +258,7 @@ def ablate(dev: str, run: str = "gen25m_s0") -> None:
             texts += [decode_ids(bpe, r.tolist()) for r in ids]
         rows.append(_score(f"{run}: {name}", "ablation", top_k, texts, judge.features(texts),
                            targets, judge))
-        _write(RESULTS / "phase10_ablations.csv", rows)
+        _write(RESULTS / f"phase10_ablations{suffix}.csv", rows)
 
 
 def _score(name: str, kind: str, temp, texts: list[str], feats: np.ndarray,
@@ -358,13 +360,14 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--repeats", type=int, default=20)
     p.add_argument("--runs", nargs="*", default=None, help="quality: only these runs")
     p.add_argument("--tag", default="", help="quality: suffix for the output files")
+    p.add_argument("--gen-run", default="gen25m_s0", help="ceiling / ablate: the NCM run")
     a = p.parse_args(argv)
     if a.cmd == "quality":
         quality(a.device, a.runs, a.tag)
     elif a.cmd == "ablate":
-        ablate(a.device)
+        ablate(a.device, a.gen_run)
     elif a.cmd == "ceiling":
-        ceiling(a.device)
+        ceiling(a.device, a.gen_run)
     elif a.cmd == "latency":
         latency(a.device, a.repeats)
     else:

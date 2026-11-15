@@ -6,6 +6,7 @@
 #   bash scripts/phase10_train.sh            # first seed of everything
 #   bash scripts/phase10_train.sh seeds      # extra seeds for gen25m and ar25m
 #   bash scripts/phase10_train.sh phase11    # Phase 11 generator variants (100M positions)
+#   bash scripts/phase10_train.sh validity   # official-style tokenizer + tied heads (100M)
 set -u
 cd "$(dirname "$0")/.."
 export PYTHONPATH=src
@@ -23,6 +24,11 @@ if [ "${1:-main}" = "phase11" ]; then
   for m in attn nocross conv linear; do
     step gen --size gen25m --mixer "$m" --tokens 100e6 --micro-batch 16
   done
+elif [ "${1:-main}" = "validity" ]; then
+  # Is Phase 10 a weak reimplementation? The official level schedule and codebook size,
+  # codebook-tied heads; compare with gen25m-attn-100m_s0 from the phase11 mode.
+  step tokenizer --tok tokv2 --micro-batch 32
+  step gen --size gen25m --tok tokv2 --tied-heads --tokens 100e6 --micro-batch 8
 elif [ "${1:-main}" = "seeds" ]; then
   for s in 1 2; do
     step gen --size gen25m --seed "$s" --micro-batch 32

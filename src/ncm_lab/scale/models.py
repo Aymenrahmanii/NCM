@@ -41,6 +41,9 @@ class GeneratorConfig:
     mixer: str = "attn"
     conv_from: int = 64  # conv mixer: levels at least this long use a depthwise convolution
     conv_kernel: int = 7
+    # Official-NCM heads: score each code by its distance to the tokenizer's codebook, so a
+    # 4096-code level costs dim x code_dim parameters instead of dim x 4096.
+    tied_heads: bool = False
 
 
 @dataclass(frozen=True)
@@ -112,7 +115,10 @@ class Tokenizer(nn.Module):
 class Generator(nn.Module):
     """Predicts every code of level k from the canvas of levels 1..k-1 (block-causal)."""
 
-    def __init__(self, cfg: GeneratorConfig, tok: TokenizerConfig):
+    def __init__(self, cfg: GeneratorConfig, tok: TokenizerConfig,
+                 codebooks: list[torch.Tensor] | None = None):
+        """codebooks: the tokenizer's, needed for tied heads at training time; a checkpoint
+        carries them, so loading one needs only the shapes."""
         super().__init__()
         self.cfg, self.tok = cfg, tok
         levels, n = tok.levels, tok.seq_len
@@ -122,7 +128,11 @@ class Generator(nn.Module):
         assert cfg.mixer in MIXERS, cfg.mixer
         self.transformer = (Transformer(cfg.dim, cfg.heads, cfg.layers) if cfg.mixer == "attn"
                             else GenTransformer(cfg, tok))
-        self.heads = nn.ModuleList(nn.Linear(cfg.dim, tok.n_codes) for _ in levels)
+        if cfg.tied_heads:
+            self.heads = nn.ModuleList(TiedHead(cfg.dim, cb) for cb in (
+                codebooks or [torch.zeros(tok.n_codes, tok.code_dim) for _ in levels]))
+        else:
+            self.heads = nn.ModuleList(nn.Linear(cfg.dim, tok.n_codes) for _ in levels)
         level_ids = torch.cat([torch.full((m,), k) for k, m in enumerate(levels)])
         pos_ids = torch.cat([((torch.arange(m) + 0.5) * n / m).long() for m in levels])
         self.register_buffer("level_ids", level_ids, persistent=False)
@@ -143,6 +153,23 @@ class Generator(nn.Module):
         else:
             h = self.transformer(x, k)
         return [self.heads[i](h[:, self.starts[i]: self.starts[i + 1]]) for i in range(k)]
+
+
+class TiedHead(nn.Module):
+    """Logits = -||z - E_i||^2 up to a per-row constant, z a projection of the hidden state
+    (the official NCM's tied head). The codebook is a frozen copy of the tokenizer's."""
+
+    def __init__(self, dim: int, codebook: torch.Tensor):
+        super().__init__()
+        self.proj = nn.Linear(dim, codebook.shape[1], bias=False)
+        self.register_buffer("E", codebook.detach().clone().float())
+        self.log_inv_t = nn.Parameter(torch.zeros(()))
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        z = self.proj(h).float()
+        e_sq = self.E.pow(2).sum(-1)
+        neg_d2 = (2 * z @ self.E.t() - e_sq) / e_sq.mean().clamp(min=1e-12)
+        return neg_d2 * self.log_inv_t.exp()
 
 
 class GenMixer(nn.Module):

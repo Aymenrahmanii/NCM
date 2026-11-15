@@ -80,3 +80,30 @@ def test_speed_bench_runs_on_cpu():
     assert mixer_speed.tokenizer_config(1024).levels[-1] == 1024
     rows = mixer_speed.bench("cpu", repeats=1, lengths=(16,), size="gen12m", warmup=0)
     assert [r["mixer"] for r in rows] == list(MIXERS) and all(r["median_ms"] > 0 for r in rows)
+
+
+def test_tied_heads_score_codes_by_distance_and_reload():
+    torch.manual_seed(0)
+    tok = Tokenizer(TOK).eval()
+    books = [vq.codebook.detach() for vq in tok.quantizers]
+    cfg = GeneratorConfig(dim=32, heads=2, layers=1, tied_heads=True)
+    gen = Generator(cfg, TOK, books).eval()
+    head = gen.heads[2]
+    h = torch.randn(3, 32)
+    z = head.proj(h)
+    nearest = torch.cdist(z, head.E).argmin(-1)
+    assert torch.equal(head(h).argmax(-1), nearest)  # top logit = closest code
+    again = Generator(cfg, TOK)  # shapes only, then the checkpoint fills the codebooks
+    again.load_state_dict(gen.state_dict())
+    assert torch.equal(again.heads[2].E, books[2])
+    codes, _ = ncm_sample(again.eval(), tok, 2)
+    assert [c.shape[1] for c in codes] == list(TOK.levels)
+
+
+def test_tokv2_uses_the_official_schedule():
+    from ncm_lab.scale.train import TOKENIZERS, generator_run_name
+
+    v2 = TOKENIZERS["tokv2"]
+    assert v2.levels[-1] == v2.seq_len == 256 and len(v2.levels) == 12 and v2.n_codes == 4096
+    assert generator_run_name("gen25m", "attn", 100e6, 0, "tokv2", True) \
+        == "gen25m-attn-100m-tokv2-tied_s0"
