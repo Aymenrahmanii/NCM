@@ -411,6 +411,61 @@ to 0.90 at 512, with break-even a little above 512 tokens. Compiling helps AR mo
 (2.2--2.5$\times$ vs.\ 1.6$\times$ at 1024 tokens), so eager-only comparisons overstate NCM.
 None of this measures the quality of a trained 1024-token NCM.
 
+\section{A controlled comparison: NCM vs.\ an AR ladder}\label{sec:scale}
+Every comparison above sets an NCM trained by its authors against AR models trained by
+others, on other data. To isolate the method, we trained everything ourselves on the same
+data: all of TinyStories cut to 256 tokens (2.1M stories, 424M real tokens), the same 4096-token
+BPE, the same optimizer, and 200M training positions per model. The NCM is a 10.7M multiscale
+residual-VQ tokenizer with 9 levels (1, 2, 4, \dots, 256 codes; 96.6\% token reconstruction)
+and a 12.5M or 24.6M block-causal generator; the AR ladder spans 1.9M to 35.9M parameters,
+the largest matching the NCM's total footprint (35.3M). Each model samples at the temperature
+(0.6--1.0) with the best MAUVE on 256 validation samples, then writes 512 test samples, scored
+like Table~\ref{tab:long-quality}. Latency is the median of 20 batch-1 samples on the laptop
+GPU. Pre-registered stop rule: if the 25M NCM with its best decoding stays above 3$\times$ the
+perplexity of the AR model that matches its latency, stop scaling.
+
+\begin{table}[t]\centering\small
+\caption{Same data, tokenizer and budget (200M positions). Batch-1 GPU latency for one
+256-token sample; MAUVE against 5 disjoint draws of 512 real test stories ($\pm$ SD across
+draws); perplexity under GPT-2 large. Single training seed.}\label{tab:scale}
+\begin{tabular}{lrrrrr}\toprule
+Model & Params & T & ms / sample & MAUVE $\uparrow$ & PPL $\downarrow$\\\midrule
+Human test stories & -- & -- & -- & 0.952 $\pm$ 0.015 & 7.1\\
+AR 35.9M & 35.9M & 1.0 & 1610 & 0.921 $\pm$ 0.014 & 16.1\\
+AR 26.4M & 26.4M & 1.0 & 1165 & 0.887 $\pm$ 0.033 & 17.2\\
+AR 6.9M & 6.9M & 0.9 & 1046 & 0.853 $\pm$ 0.030 & 14.9\\
+AR 3.4M & 3.4M & 0.9 & 725 & 0.767 $\pm$ 0.043 & 19.6\\
+AR 1.9M & 1.9M & 0.8 & 694 & 0.590 $\pm$ 0.054 & 15.3\\
+NCM, 24.6M generator & 35.3M & 0.8 & \textbf{61} & 0.006 $\pm$ 0.001 & 212\\
+NCM, 12.5M generator & 23.2M & 1.0 & 53 & 0.005 $\pm$ 0.000 & 548\\\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]\centering
+\includegraphics[width=\linewidth]{phase10_pareto.png}
+\caption{Quality against batch-1 latency, same data and tokenizer. NCM (red) is about
+20$\times$ faster than the AR ladder (blue) and two orders of magnitude worse on MAUVE.}
+\label{fig:scale}
+\end{figure}
+
+NCM is about 20$\times$ faster per sample and far worse (Table~\ref{tab:scale},
+Figure~\ref{fig:scale}): even the 1.9M AR model beats the 35M NCM by two orders of magnitude on
+MAUVE. Doubling the generator barely helps (MAUVE 0.005 $\to$ 0.006), and the samples open
+fluently and then stutter (``her her her mom her'', ``to to''). The speed gap is an upper bound:
+the AR time is dominated by per-token Python and kernel-launch overhead (the 1.9M model is
+barely faster than the 6.9M one), which a fused or CUDA-graph decoder would cut several-fold.
+
+\paragraph{Where the quality is lost.} We encoded real test stories, kept their first $k$
+levels and let the generator sample the rest. The tokenizer alone (all 9 levels real)
+reaches MAUVE 0.863 and perplexity 12.9, close to the AR models. Generating only the last
+level, with every coarser level perfect, drops MAUVE to 0.010 (0.012 greedy, perplexity 61);
+levels 1--6 add almost nothing on top (perplexity 181 $\to$ 212). The last level's 256 codes
+are predicted in one pass without seeing each other, so greedy decoding with perfect context
+is the best any sampling rule can do, and it is still 4$\times$ the perplexity of the 1.9M AR
+model, which is 11$\times$ slower and the closest in latency. The stop rule is met. Fixing the
+finest level needs a different design (iterative refinement, or a small AR head on the last
+level), not more scale.
+
 \section{Discussion}
 On a laptop GPU with short outputs, NCM's parallel decoding buys predictable single-request
 latency. Throughput comes only once the input prefix is cached: without the cache, every

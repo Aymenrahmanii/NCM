@@ -16,7 +16,8 @@ if [ "${1:-}" = "--arxiv" ]; then
   mkdir -p "$out/figures" "$out/tables"
   cp refs.bib main.bbl "$out/"
   cp tables/*.tex "$out/tables/" 2>/dev/null || true
-  cp ../results/limits_*.png ../results/phase4_*_fp16.png "$out/figures/" 2>/dev/null || true
+  cp ../results/limits_*.png ../results/phase4_*_fp16.png ../results/phase9_*.png \
+     ../results/phase10_*.png "$out/figures/" 2>/dev/null || true
   tar -czf arxiv.tar.gz -C "$out" .
   echo "wrote paper/arxiv.tar.gz"
 fi
