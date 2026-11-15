@@ -4,6 +4,7 @@
     python -m ncm_lab.scale.evaluate latency      # batch-1 time per 256-token sample
     python -m ncm_lab.scale.evaluate latency --device cpu
     python -m ncm_lab.scale.evaluate plot
+    python -m ncm_lab.scale.evaluate ceiling    # tokenizer vs generator: where quality goes
 
 Every finished run in artifacts/scale/ (except the tokenizer) is evaluated, one sampling
 setting per model: the temperature from TEMPS with the best MAUVE against validation
@@ -38,7 +39,7 @@ from .train import ART, load_tokenizer
 RESULTS = Path("results")
 TEMPS = (0.6, 0.7, 0.8, 0.9, 1.0)
 N_TUNE, N_TEST, DRAWS = 256, 512, 5
-BATCH = 128
+BATCH = 64  # sampling batch; with the fp32 judge resident, 128 spilled past 6 GB
 JUDGE = "gpt2-large"
 
 
@@ -92,7 +93,7 @@ class Judge:
         self.model = AutoModelForCausalLM.from_pretrained(JUDGE).to(dev).eval()
         self.dev = dev
 
-    def _batches(self, texts: list[str], bos: bool, size: int = 16):
+    def _batches(self, texts: list[str], bos: bool, size: int = 8):
         start = self.tok.bos_token if bos else ""  # MAUVE's featurizer uses no BOS
         for i in range(0, len(texts), size):
             chunk = [start + (t or ".") for t in texts[i:i + size]]
@@ -111,7 +112,7 @@ class Judge:
     @torch.no_grad()
     def perplexity(self, texts: list[str]) -> float:
         nll, n = 0.0, 0
-        for enc in self._batches(texts, bos=True):
+        for enc in self._batches(texts, bos=True, size=4):  # logits are 50k wide
             target = enc.input_ids.masked_fill(enc.attention_mask == 0, -100)[:, 1:]
             logits = self.model(**enc).logits[:, :-1]
             nll += F.cross_entropy(logits.flatten(0, 1).float(), target.flatten(),
@@ -168,9 +169,51 @@ def quality(dev: str) -> None:
         rows.append(_score(name, meta["kind"], best[1], texts, feats, test_feats, judge))
         del s
         torch.cuda.empty_cache()
+        _write(RESULTS / "phase10_tune.csv", tune_rows)  # after every run: a crash keeps the rest
+        _write(RESULTS / "phase10_quality.csv", rows)
     samples.close()
     _write(RESULTS / "phase10_tune.csv", tune_rows)
     _write(RESULTS / "phase10_quality.csv", rows)
+
+
+@torch.no_grad()
+def ceiling(dev: str, gen_run: str = "gen25m_s0") -> None:
+    """Where NCM quality is lost: the tokenizer, or the generator at the fine levels.
+
+    Test stories outside the MAUVE reference draws are encoded to real codes; the first k
+    levels are kept and the generator samples the rest (k = 9 is plain reconstruction).
+    """
+    bpe = load_bpe()
+    judge = Judge(dev)
+    test = load_split("test")
+    perm = np.random.default_rng(0).permutation(len(test))
+    refs = [decode_ids(bpe, test[i].tolist()) for i in perm[:N_TEST * DRAWS]]
+    targets = [judge.features(refs[d * N_TEST:(d + 1) * N_TEST]) for d in range(DRAWS)]
+    ids = torch.from_numpy(test[np.sort(perm[N_TEST * DRAWS:N_TEST * (DRAWS + 1)])]
+                           .astype(np.int64))
+    s = Sampler(gen_run, dev)
+    n_levels = len(s.tok.cfg.levels)
+    rows = []
+    n = n_levels
+    settings = [(n, None), (n - 1, 0.0), (n - 1, 0.8), (n - 2, 0.8), (n - 3, 0.8)]
+    for keep, temp in [(k, t) for k, t in settings if k >= 0]:
+        texts = []
+        for chunk in ids.split(64):
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=dev == "cuda"):
+                real, f_hats, _ = s.tok.quantize(s.tok.encode(chunk.to(dev)))
+                if keep == n_levels:
+                    canvas = f_hats[-1]
+                else:
+                    torch.manual_seed(3)
+                    _, canvases = ncm_sample(s.model, s.tok, len(chunk), temp,
+                                             prefix=real[:keep])
+                    canvas = canvases[-1]
+                out = s.tok.decode(canvas).argmax(-1)
+            texts += [decode_ids(bpe, r.tolist()) for r in out]
+        name = (f"real levels 1-{keep}" + ("" if keep == n_levels
+                                           else f", {gen_run} samples {keep + 1}-{n_levels}"))
+        rows.append(_score(name, "ceiling", temp, texts, judge.features(texts), targets, judge))
+        _write(RESULTS / "phase10_ceiling.csv", rows)
 
 
 def _score(name: str, kind: str, temp, texts: list[str], feats: np.ndarray,
@@ -267,12 +310,14 @@ def _read(path: Path) -> list[dict]:
 
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("cmd", choices=["quality", "latency", "plot"])
+    p.add_argument("cmd", choices=["quality", "latency", "plot", "ceiling"])
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--repeats", type=int, default=20)
     a = p.parse_args(argv)
     if a.cmd == "quality":
         quality(a.device)
+    elif a.cmd == "ceiling":
+        ceiling(a.device)
     elif a.cmd == "latency":
         latency(a.device, a.repeats)
     else:

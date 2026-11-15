@@ -59,3 +59,37 @@ def test_plot_writes_png(tmp_path, monkeypatch):
             w.writerows(rows)
     ev.plot()
     assert (tmp_path / "phase10_pareto.png").stat().st_size > 10_000
+
+
+class FakeJudge:
+    def __init__(self, dev):
+        pass
+
+    def features(self, texts):
+        return torch.randn(len(texts), 4).numpy()
+
+    def perplexity(self, texts):
+        return 10.0
+
+    def entropy(self, texts):
+        return 1.0
+
+
+def test_ceiling_writes_one_row_per_setting(runs, tmp_path, monkeypatch):
+    rows = torch.randint(2, 50, (40, 16)).numpy().astype("int16")
+    monkeypatch.setattr(ev, "RESULTS", tmp_path)
+    monkeypatch.setattr(ev, "Judge", FakeJudge)
+    monkeypatch.setattr(ev, "load_split", lambda name, **kw: rows)
+    monkeypatch.setattr(ev, "load_bpe", FakeBPE)
+    monkeypatch.setattr(ev, "decode_ids", lambda bpe, ids: bpe.decode(ids))
+    monkeypatch.setattr(ev, "mauve", lambda p, q: 0.5)
+    monkeypatch.setattr(ev, "N_TEST", 4)
+    monkeypatch.setattr(ev, "DRAWS", 2)
+    ev.ceiling("cpu", gen_run="gen_s0")
+    with open(tmp_path / "phase10_ceiling.csv", newline="") as f:
+        out = list(csv.DictReader(f))
+    # 3 levels: reconstruction, last level greedy and sampled, last two sampled, all sampled
+    assert [r["run"].split(",")[0] for r in out] == [
+        "real levels 1-3", "real levels 1-2", "real levels 1-2", "real levels 1-1",
+        "real levels 1-0"]
+    assert all(r["n"] == "4" for r in out)
