@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ncm_lab.toy_ncm.config import EOS_ID, VOCAB_SIZE
-from ncm_lab.toy_ncm.modules import Transformer, sample_logits
+from ncm_lab.toy_ncm.modules import Attention, Transformer, sample_logits
 from ncm_lab.toy_ncm.tokenizer import VectorQuantizer, down, up
 
 
@@ -29,11 +29,18 @@ class TokenizerConfig:
     dec_layers: int = 4
 
 
+MIXERS = ("attn", "nocross", "conv", "linear")
+
+
 @dataclass(frozen=True)
 class GeneratorConfig:
     dim: int = 384
     heads: int = 6
     layers: int = 6
+    # Phase 11 token mixers (see GenMixer): attn is the Phase 10 generator.
+    mixer: str = "attn"
+    conv_from: int = 64  # conv mixer: levels at least this long use a depthwise convolution
+    conv_kernel: int = 7
 
 
 @dataclass(frozen=True)
@@ -112,7 +119,9 @@ class Generator(nn.Module):
         self.in_proj = nn.Linear(tok.code_dim, cfg.dim)
         self.level_emb = nn.Embedding(len(levels), cfg.dim)
         self.pos_emb = nn.Embedding(n, cfg.dim)
-        self.transformer = Transformer(cfg.dim, cfg.heads, cfg.layers)
+        assert cfg.mixer in MIXERS, cfg.mixer
+        self.transformer = (Transformer(cfg.dim, cfg.heads, cfg.layers) if cfg.mixer == "attn"
+                            else GenTransformer(cfg, tok))
         self.heads = nn.ModuleList(nn.Linear(cfg.dim, tok.n_codes) for _ in levels)
         level_ids = torch.cat([torch.full((m,), k) for k, m in enumerate(levels)])
         pos_ids = torch.cat([((torch.arange(m) + 0.5) * n / m).long() for m in levels])
@@ -129,8 +138,101 @@ class Generator(nn.Module):
         t = self.starts[k]
         x = torch.cat([down(c, m) for c, m in zip(canvases, self.tok.levels)], dim=1)
         x = self.in_proj(x) + self.level_emb(self.level_ids[:t]) + self.pos_emb(self.pos_ids[:t])
-        h = self.transformer(x, self.mask[:t, :t])
+        if self.cfg.mixer == "attn":
+            h = self.transformer(x, self.mask[:t, :t])
+        else:
+            h = self.transformer(x, k)
         return [self.heads[i](h[:, self.starts[i]: self.starts[i + 1]]) for i in range(k)]
+
+
+class GenMixer(nn.Module):
+    """Token mixing for the Phase 11 generator variants, on the first k levels.
+
+    Every position's input already holds the canvas of all coarser levels, so mixing across
+    levels may be redundant. nocross: attention inside each level only. conv: depthwise
+    convolution inside each level of conv_from positions or more, block-causal attention
+    among the shorter levels. linear: block-causal linear attention (elu + 1 feature map).
+    """
+
+    def __init__(self, cfg: GeneratorConfig, tok: TokenizerConfig):
+        super().__init__()
+        self.cfg, self.levels = cfg, tok.levels
+        self.heads = cfg.heads
+        self.starts = [0]
+        for m in tok.levels:
+            self.starts.append(self.starts[-1] + m)
+        level_ids = torch.cat([torch.full((m,), k) for k, m in enumerate(tok.levels)])
+        self.register_buffer("level_ids", level_ids, persistent=False)
+        if cfg.mixer in ("nocross", "conv"):
+            self.attn = Attention(cfg.dim, cfg.heads)
+            same = level_ids[:, None] == level_ids[None, :]
+            causal = level_ids[:, None] >= level_ids[None, :]
+            self.register_buffer("mask", same if cfg.mixer == "nocross" else causal,
+                                 persistent=False)
+        if cfg.mixer == "conv":
+            self.n_coarse = sum(m < cfg.conv_from for m in tok.levels)
+            self.conv = nn.Conv1d(cfg.dim, cfg.dim, cfg.conv_kernel, padding=cfg.conv_kernel // 2,
+                                  groups=cfg.dim)
+            self.conv_proj = nn.Linear(cfg.dim, cfg.dim)
+        if cfg.mixer == "linear":
+            self.qkv = nn.Linear(cfg.dim, 3 * cfg.dim)
+            self.proj = nn.Linear(cfg.dim, cfg.dim)
+
+    def forward(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        t = self.starts[k]
+        if self.cfg.mixer == "nocross":
+            return self.attn(x, self.mask[:t, :t])
+        if self.cfg.mixer == "conv":
+            c = self.starts[min(k, self.n_coarse)]
+            parts = [self.attn(x[:, :c], self.mask[:c, :c])] if c else []
+            for lv in range(self.n_coarse, k):  # each fine level on its own: no leakage
+                seg = x[:, self.starts[lv]: self.starts[lv + 1]].transpose(1, 2)
+                parts.append(self.conv_proj(self.conv(seg).transpose(1, 2)))
+            return torch.cat(parts, dim=1)
+        return self._linear(x, k)
+
+    def _linear(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        b, t, c = x.shape
+        q, kk, v = self.qkv(x).view(b, t, 3, self.heads, c // self.heads).permute(2, 0, 3, 1, 4)
+        q, kk = F.elu(q.float()) + 1, F.elu(kk.float()) + 1
+        v = v.float()
+        ids = self.level_ids[:t]
+        one_hot = F.one_hot(ids, k).to(q.dtype)  # (t, k): position -> level
+        kv = torch.einsum("bhtd,bhte,tl->bhlde", kk, v, one_hot).cumsum(2)  # levels <= l
+        z = torch.einsum("bhtd,tl->bhld", kk, one_hot).cumsum(2)
+        outs = []
+        for lv in range(k):  # per level, not per position: (t, d, d) would not fit in memory
+            ql = q[:, :, self.starts[lv]: self.starts[lv + 1]]
+            den = (ql * z[:, :, lv, None]).sum(-1, keepdim=True).clamp(min=1e-6)
+            outs.append(ql @ kv[:, :, lv] / den)
+        out = torch.cat(outs, dim=2).to(x.dtype)
+        return self.proj(out.transpose(1, 2).reshape(b, t, c))
+
+
+class GenBlock(nn.Module):
+    def __init__(self, cfg: GeneratorConfig, tok: TokenizerConfig):
+        super().__init__()
+        self.ln1 = nn.LayerNorm(cfg.dim)
+        self.mix = GenMixer(cfg, tok)
+        self.ln2 = nn.LayerNorm(cfg.dim)
+        self.mlp = nn.Sequential(nn.Linear(cfg.dim, 4 * cfg.dim), nn.GELU(),
+                                 nn.Linear(4 * cfg.dim, cfg.dim))
+
+    def forward(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        x = x + self.mix(self.ln1(x), k)
+        return x + self.mlp(self.ln2(x))
+
+
+class GenTransformer(nn.Module):
+    def __init__(self, cfg: GeneratorConfig, tok: TokenizerConfig):
+        super().__init__()
+        self.blocks = nn.ModuleList(GenBlock(cfg, tok) for _ in range(cfg.layers))
+        self.ln = nn.LayerNorm(cfg.dim)
+
+    def forward(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        for block in self.blocks:
+            x = block(x, k)
+        return self.ln(x)
 
 
 @torch.no_grad()

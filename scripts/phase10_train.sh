@@ -5,6 +5,7 @@
 #
 #   bash scripts/phase10_train.sh            # first seed of everything
 #   bash scripts/phase10_train.sh seeds      # extra seeds for gen25m and ar25m
+#   bash scripts/phase10_train.sh phase11    # Phase 11 generator variants (100M positions)
 set -u
 cd "$(dirname "$0")/.."
 export PYTHONPATH=src
@@ -17,7 +18,12 @@ step() {
   $PY -m ncm_lab.scale.train "$@" || { echo "FAILED: $*"; exit 1; }
 }
 
-if [ "${1:-main}" = "seeds" ]; then
+if [ "${1:-main}" = "phase11" ]; then
+  # Phase 11 generator variants at half budget, with an attention baseline at the same budget
+  for m in attn nocross conv linear; do
+    step gen --size gen25m --mixer "$m" --tokens 100e6 --micro-batch 16
+  done
+elif [ "${1:-main}" = "seeds" ]; then
   for s in 1 2; do
     step gen --size gen25m --seed "$s" --micro-batch 32
     step ar --size ar25m --seed "$s"

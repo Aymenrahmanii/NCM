@@ -17,6 +17,7 @@ batch 64 x 256 tokens, gradient clip 1.0, same lr.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import csv
 import os
 import time
@@ -32,8 +33,8 @@ from ncm_lab.toy_ncm.config import PAD_ID
 from ncm_lab.toy_ncm.modules import cosine_lr, count_params
 
 from .data import batch_from, load_split
-from .models import (ARConfig, ARModel, Generator, GeneratorConfig, Tokenizer, TokenizerConfig,
-                     config_dict)
+from .models import (MIXERS, ARConfig, ARModel, Generator, GeneratorConfig, Tokenizer,
+                     TokenizerConfig, config_dict)
 
 ART = Path("artifacts/scale")
 STOP_FILE = ART / "STOP"
@@ -253,21 +254,30 @@ def train_tokenizer(tokens: float, seed: int, dev: str, **kw) -> bool:
                tokens, seed, on_step=on_step, dev=dev, **kw)
 
 
-def train_generator(size: str, tokens: float, seed: int, dev: str, **kw) -> bool:
+def generator_run_name(size: str, mixer: str, tokens: float, seed: int) -> str:
+    """Phase 10 names stay as they were; Phase 11 variants and budgets get their own."""
+    if mixer == "attn" and tokens == DEFAULT_TOKENS["gen"]:
+        return f"{size}_s{seed}"
+    return f"{size}-{mixer}-{tokens / 1e6:g}m_s{seed}"
+
+
+def train_generator(size: str, tokens: float, seed: int, dev: str, mixer: str = "attn",
+                    **kw) -> bool:
     torch.manual_seed(seed)
     tok = load_tokenizer(dev)
     if dev == "cuda" and SPEED["compile"]:
         tok.encoder.compile()  # frozen, but runs on every batch to produce the targets
-    gen = Generator(GENERATORS[size], tok.cfg).to(dev)
+    cfg = dataclasses.replace(GENERATORS[size], mixer=mixer)
+    gen = Generator(cfg, tok.cfg).to(dev)
     val = load_val(dev)
 
     def loss_fn(ids: torch.Tensor, step: int) -> torch.Tensor:
         losses, _ = generator_losses(gen, tok, ids, torch.rand(1).item() * MAX_CORRUPT)
         return torch.stack(losses).mean()
 
-    meta = {"kind": "gen", "config": config_dict(GENERATORS[size]), "seed": seed}
-    return run(f"{size}_s{seed}", gen, loss_fn, lambda: generator_eval(gen, tok, val), meta,
-               tokens, seed, dev=dev, **kw)
+    meta = {"kind": "gen", "config": config_dict(cfg), "seed": seed}
+    return run(generator_run_name(size, mixer, tokens, seed), gen, loss_fn,
+               lambda: generator_eval(gen, tok, val), meta, tokens, seed, dev=dev, **kw)
 
 
 def train_ar(size: str, tokens: float, seed: int, dev: str, **kw) -> bool:
@@ -287,6 +297,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--tokens", type=float, default=None)
     p.add_argument("--micro-batch", type=int, default=BATCH)
     p.add_argument("--max-minutes", type=float, default=None)
+    p.add_argument("--mixer", choices=MIXERS, default="attn", help="generator only (Phase 11)")
     a = p.parse_args(argv)
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     tokens = a.tokens or DEFAULT_TOKENS[a.kind]
@@ -294,7 +305,7 @@ def main(argv: list[str] | None = None) -> None:
     if a.kind == "tokenizer":
         train_tokenizer(tokens, a.seed, dev, **kw)
     elif a.kind == "gen":
-        train_generator(a.size or "gen25m", tokens, a.seed, dev, **kw)
+        train_generator(a.size or "gen25m", tokens, a.seed, dev, mixer=a.mixer, **kw)
     else:
         train_ar(a.size or "ar7m", tokens, a.seed, dev, **kw)
 
