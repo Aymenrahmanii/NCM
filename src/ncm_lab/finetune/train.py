@@ -173,7 +173,7 @@ def evaluate(hyps: list[str], rows: list[dict]) -> dict:
 
     sc = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL"], use_stemmer=True)
     s = [sc.score(r["summary"], h) for h, r in zip(hyps, rows)]
-    faith = [check(h, r["dialogue"]) for h, r in zip(hyps, rows)]
+    faith = [check(h, r["dialogue"], lenient=True) for h, r in zip(hyps, rows)]
     n = len(rows)
     return {**{k: round(100 * statistics.fmean(x[k].fmeasure for x in s), 2)
                for k in ("rouge1", "rouge2", "rougeL")},
@@ -220,13 +220,39 @@ def run(model: str, arm: str, seed: int, dev: str = "cuda") -> None:
         w.writerow(row)
 
 
+def rescore() -> None:
+    """Recompute every run's metrics from its saved outputs (after a metric change), and
+    add the human reference summaries as a calibration row."""
+    test_rows = load("test")
+    with open(RUNS_CSV, newline="") as f:
+        runs = [r for r in csv.DictReader(f) if r["model"] != "reference"]
+    out = []
+    for r in runs:
+        path = OUT_DIR / f"{r['model']}_{r['arm']}_s{r['seed']}.jsonl"
+        with open(path, encoding="utf-8") as f:
+            hyps = [json.loads(line)["hyp"] for line in f]
+        out.append({**r, **evaluate(hyps, test_rows)})
+    ref = evaluate([r["summary"] for r in test_rows], test_rows)
+    out.append({**{k: "" for k in out[0]}, "model": "reference", "arm": "human", **ref})
+    with open(RUNS_CSV, "w", newline="") as f:
+        w = csv.DictWriter(f, list(out[0]))
+        w.writeheader()
+        w.writerows(out)
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--model", choices=list(TASKS), required=True)
-    p.add_argument("--arm", choices=ARMS, required=True)
+    p.add_argument("--model", choices=list(TASKS))
+    p.add_argument("--arm", choices=ARMS)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--rescore", action="store_true", help="recompute metrics, no training")
     a = p.parse_args(argv)
-    run(a.model, a.arm, a.seed)
+    if a.rescore:
+        rescore()
+    elif a.model and a.arm:
+        run(a.model, a.arm, a.seed)
+    else:
+        p.error("--model and --arm are required unless --rescore")
 
 
 if __name__ == "__main__":

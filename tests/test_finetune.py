@@ -37,3 +37,12 @@ def test_masked_lora_leaves_key_columns_untouched():
     diff = layer(x) - base(x)
     assert torch.all(diff[:, 2:4] == 0) and diff[:, :2].abs().sum() > 0
     assert torch.allclose(layer.weight, base.weight + layer.delta())
+
+
+def test_lenient_check_ignores_possessives_and_calendar_words():
+    from ncm_lab.limits.faithfulness import check
+
+    hyp = "Tom will pick up Linda's keys on Saturday. Then Zed calls."
+    support = "Linda: Tom, my keys are at home"
+    assert check(hyp, support)["invented_names"] == ["Linda's", "Saturday", "Zed"]
+    assert check(hyp, support, lenient=True)["invented_names"] == ["Zed"]

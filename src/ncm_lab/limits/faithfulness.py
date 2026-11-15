@@ -46,10 +46,21 @@ def repeats(text: str) -> bool:
     return len(bigrams) != len(set(bigrams))
 
 
-def check(hyp: str, support: str) -> dict:
+POSSESSIVE = re.compile(r"['’]s$")
+CALENDAR = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+            "January", "February", "March", "April", "May", "June", "July", "August",
+            "September", "October", "November", "December", "Christmas", "Easter"}
+
+
+def check(hyp: str, support: str, lenient: bool = False) -> dict:
+    """lenient (Phase 12): "Linda's" counts as "Linda", and days, months and holidays are
+    not names. Off by default so the Phase 7 numbers stay reproducible."""
     support_lower = support.lower()
     invented_numbers = sorted(numbers(hyp) - numbers(support))
-    invented_names = sorted(n for n in names(hyp) if n.lower() not in support_lower)
+    found = names(hyp)
+    if lenient:
+        found = {POSSESSIVE.sub("", n) for n in found} - CALENDAR
+    invented_names = sorted(n for n in found if n.lower() not in support_lower)
     return {"invented_numbers": invented_numbers, "invented_names": invented_names,
             "repeats": repeats(hyp)}
 
