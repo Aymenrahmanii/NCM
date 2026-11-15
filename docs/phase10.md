@@ -132,3 +132,79 @@ It passes the 95% gate. As in the toy (45% at a quarter of the length, 73% at ha
 coarse levels carry little token-level detail: at a quarter and half of the length this one
 gets 31% and 58%. The text is mostly written by the last two levels, the ones the
 diagnostic found fragile. Log: `artifacts/scale/tokenizer/log.csv`.
+
+## Result: NCM vs the AR ladder (2026-11-15)
+
+Every model trained on the same 200M TinyStories positions with the same BPE and optimiser.
+One sampling temperature per model, picked from 0.6–1.0 by MAUVE on 256 validation samples
+(`results/phase10_tune.csv`). Then 512 test samples per model, scored against 5 disjoint
+draws of 512 real test stories (`results/phase10_quality.csv`, samples in
+`results/phase10_samples.jsonl`). Latency is the median of 20 batch-1 runs for one 256-token
+sample on the RTX 3050 (`results/phase10_latency_cuda.csv`).
+
+| model | params | T | GPU ms / story | MAUVE ↑ (± sd) | GPT-2-L ppl ↓ | distinct-2 |
+|---|---|---|---|---|---|---|
+| human test stories | – | – | – | 0.952 ± 0.015 | 7.1 | 0.44 |
+| ar35m | 35.9M | 1.0 | 1610 | **0.921** ± 0.014 | 16.1 | 0.45 |
+| ar25m | 26.4M | 1.0 | 1165 | 0.887 ± 0.033 | 17.2 | 0.45 |
+| ar7m | 6.9M | 0.9 | 1046 | 0.853 ± 0.030 | 14.9 | 0.39 |
+| ar3m | 3.4M | 0.9 | 725 | 0.767 ± 0.043 | 19.6 | 0.39 |
+| ar2m | 1.9M | 0.8 | 694 | 0.590 ± 0.054 | 15.3 | 0.32 |
+| NCM gen25m + tokenizer | 35.3M | 0.8 | **61** | 0.006 ± 0.001 | 212 | 0.51 |
+| NCM gen12m + tokenizer | 23.2M | 1.0 | 53 | 0.005 ± 0.000 | 548 | 0.65 |
+
+![Phase 10 Pareto](../results/phase10_pareto.png)
+
+- **NCM fails on quality at this scale.** At the AR's own footprint (35M) it is two orders
+  of magnitude below even the 1.9M AR model on MAUVE. Samples open fluently ("Once upon a
+  time, there was a little girl named Lily.") and then stutter ("her her her mom her",
+  "to to"): neighbouring tokens of the last level are sampled independently and disagree.
+  The high distinct-2 is that noise, not diversity.
+- **Doubling the generator barely helps** (MAUVE flat, perplexity 548 → 212), and the
+  temperature sweep is flat (val MAUVE 0.006–0.008 at every T). Generator capacity is not
+  the bottleneck.
+- **The AR ladder is well behaved:** quality rises monotonically with size, and the larger
+  models prefer T = 1.0.
+- **The ~20× speed gap is an upper bound.** AR latency here is dominated by per-token Python
+  and kernel-launch overhead (ar2m at 694 ms is barely faster than ar7m at 4× the
+  parameters). A CUDA-graph or fused AR decoder would shrink the gap several-fold; NCM's
+  9 forward passes have no such overhead to remove.
+
+### Where the quality is lost (`python -m ncm_lab.scale.evaluate ceiling`)
+
+512 test stories, disjoint from the MAUVE reference draws, are encoded to their real codes.
+The first k levels are kept and gen25m samples the rest (`results/phase10_ceiling.csv`).
+
+| levels kept real | generated | T | MAUVE ↑ | GPT-2-L ppl ↓ |
+|---|---|---|---|---|
+| 1–9 (tokenizer reconstruction) | none | – | **0.863** | 12.9 |
+| 1–8 | 9 | greedy | 0.012 | 61.0 |
+| 1–8 | 9 | 0.8 | 0.010 | 111.8 |
+| 1–7 | 8–9 | 0.8 | 0.006 | 180.7 |
+| 1–6 | 7–9 | 0.8 | 0.006 | 203.4 |
+| none (normal sampling) | 1–9 | 0.8 | 0.006 | 212.4 |
+
+- **The tokenizer is not the bottleneck:** its reconstructions reach 0.86 MAUVE (human
+  ceiling 0.95), better than ar7m.
+- **The last level is.** With every coarser level perfect, generating only the 256-code
+  level drops MAUVE from 0.86 to 0.01. Levels 1–6 add almost nothing on top
+  (ppl 181 → 212). This confirms, at 35M parameters and 200M tokens, the diagnostic above.
+- **Greedy is the ceiling for decoding.** The 256 last-level codes are predicted in one
+  pass and never see each other, so with oracle context the best a sampling rule can do is
+  pick each code's argmax: perplexity 61. Temperature per level, top-k or guidance change
+  which independent choice is made, not the independence.
+
+### Go / stop
+
+The pre-registered kill rule: stop scaling if the 25M NCM with the best decoding is still
+above 3× the perplexity of the AR model that matches its latency. No AR model is as fast;
+the closest, ar2m (1.9M, 694 ms, 11× slower), has perplexity 15.3. NCM's best is 212 with
+real sampling and 61 even with an oracle for levels 1–8, so ≥ 4× under the most generous
+reading. **Verdict: stop.** Phase 11 (cheaper attention for a generator that does not yet
+write fluent text) is skipped; next is Phase 12.
+
+The honest claim from Phase 10 is the plan's third outcome: *a smaller AR model is both
+faster and more fluent; NCM's speed costs quality at this scale.* Making the finest level
+work would need a different design (e.g. iterative refinement or a small AR head on the
+last level), which is new research rather than this plan. Extra seeds are not run: the gap
+is 100× on MAUVE, far beyond seed noise (MAUVE sd ≤ 0.05 across draws).

@@ -1,0 +1,6 @@
+run,kind,temperature,n,gpt2_large_ppl,mauve,mauve_sd,distinct_2,entropy,words
+real levels 1-9,ceiling,,512,12.94,0.8633,0.0167,0.4556,4.191,153.9
+"real levels 1-8, gen25m_s0 samples 9-9",ceiling,0.0,512,61.04,0.0118,0.0029,0.3597,4.058,152.0
+"real levels 1-8, gen25m_s0 samples 9-9",ceiling,0.8,512,111.79,0.0104,0.001,0.4797,4.228,153.1
+"real levels 1-7, gen25m_s0 samples 8-9",ceiling,0.8,512,180.74,0.0062,0.0009,0.4953,4.229,152.6
+"real levels 1-6, gen25m_s0 samples 7-9",ceiling,0.8,512,203.41,0.0062,0.0009,0.5057,4.241,151.9
