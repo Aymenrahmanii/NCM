@@ -1,0 +1,16 @@
+{
+ "validation": {
+  "n": 818,
+  "truncated": 63,
+  "token_acc": 0.9897,
+  "exact": 0.7787,
+  "mean_len": 25.5
+ },
+ "test": {
+  "n": 819,
+  "truncated": 57,
+  "token_acc": 0.9894,
+  "exact": 0.7692,
+  "mean_len": 25.4
+ }
+}
