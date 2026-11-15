@@ -93,3 +93,39 @@ def test_ceiling_writes_one_row_per_setting(runs, tmp_path, monkeypatch):
         "real levels 1-3", "real levels 1-2", "real levels 1-2", "real levels 1-1",
         "real levels 1-0"]
     assert all(r["n"] == "4" for r in out)
+
+
+def test_ablation_settings_cover_every_level():
+    settings = ev.ablation_settings(9)
+    assert all(len(t) == 9 for t, _ in settings.values())
+    assert settings["T=0.8, last level greedy"][0][-1] == 0.0
+    assert settings["T 1.0 -> 0.5 by level"][0][0] == 1.0
+    assert settings["T 1.0 -> 0.5 by level"][0][-1] == 0.5
+
+
+def test_quality_filter_and_tag(runs, tmp_path, monkeypatch):
+    monkeypatch.setattr(ev, "RESULTS", tmp_path)
+    monkeypatch.setattr(ev, "Judge", lambda dev: _FakeJudge())
+    monkeypatch.setattr(ev, "load_bpe", FakeBPE)
+    monkeypatch.setattr(ev, "decode_ids", lambda bpe, ids: bpe.decode(ids))
+    monkeypatch.setattr(ev, "reference_texts", lambda split, n, bpe, seed=0: ["w1 w2"] * n)
+    monkeypatch.setattr(ev, "mauve", lambda p, q: 0.5)
+    monkeypatch.setattr(ev, "N_TUNE", 2)
+    monkeypatch.setattr(ev, "N_TEST", 2)
+    monkeypatch.setattr(ev, "TEMPS", (1.0,))
+    ev.quality("cpu", runs=["ar_s0"], tag="_x")
+    with open(tmp_path / "phase10_quality_x.csv", newline="") as f:
+        names = [r["run"] for r in csv.DictReader(f)]
+    assert names == ["human (test stories)", "ar_s0"]
+    assert not (tmp_path / "phase10_quality.csv").exists()
+
+
+class _FakeJudge:
+    def features(self, texts):
+        return torch.randn(len(texts), 4).numpy()
+
+    def perplexity(self, texts):
+        return 10.0
+
+    def entropy(self, texts):
+        return 1.0

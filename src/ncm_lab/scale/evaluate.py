@@ -5,6 +5,8 @@
     python -m ncm_lab.scale.evaluate latency --device cpu
     python -m ncm_lab.scale.evaluate plot
     python -m ncm_lab.scale.evaluate ceiling    # tokenizer vs generator: where quality goes
+    python -m ncm_lab.scale.evaluate ablate     # decoding settings for gen25m
+    python -m ncm_lab.scale.evaluate quality --runs gen25m_s1 ar25m_s1 --tag _seeds
 
 Every finished run in artifacts/scale/ (except the tokenizer) is evaluated, one sampling
 setting per model: the temperature from TEMPS with the best MAUVE against validation
@@ -143,7 +145,9 @@ def reference_texts(split: str, n: int, bpe, seed: int = 0) -> list[str]:
     return [decode_ids(bpe, data[i].tolist()) for i in rows]
 
 
-def quality(dev: str) -> None:
+def quality(dev: str, runs: list[str] | None = None, tag: str = "") -> None:
+    """runs: only these (default all finished); tag: suffix for the output files, so a later
+    batch (extra seeds, Phase 11 variants) does not overwrite the Phase 10 results."""
     bpe = load_bpe()
     judge = Judge(dev)
     val_ref = judge.features(reference_texts("val", N_TUNE, bpe))
@@ -153,8 +157,10 @@ def quality(dev: str) -> None:
     human = test_refs[:N_TEST]
     rows.append(_score("human (test stories)", "", None, human, test_feats[0], test_feats[1:],
                        judge))
-    samples = open(RESULTS / "phase10_samples.jsonl", "w", encoding="utf-8")
+    samples = open(RESULTS / f"phase10_samples{tag}.jsonl", "w", encoding="utf-8")
     for name, meta in finished_runs().items():
+        if runs and name not in runs:
+            continue
         s = Sampler(name, dev)
         best = (-1.0, None)
         for t in TEMPS:
@@ -169,11 +175,12 @@ def quality(dev: str) -> None:
         rows.append(_score(name, meta["kind"], best[1], texts, feats, test_feats, judge))
         del s
         torch.cuda.empty_cache()
-        _write(RESULTS / "phase10_tune.csv", tune_rows)  # after every run: a crash keeps the rest
-        _write(RESULTS / "phase10_quality.csv", rows)
+        # after every run, so a crash keeps the finished ones
+        _write(RESULTS / f"phase10_tune{tag}.csv", tune_rows)
+        _write(RESULTS / f"phase10_quality{tag}.csv", rows)
     samples.close()
-    _write(RESULTS / "phase10_tune.csv", tune_rows)
-    _write(RESULTS / "phase10_quality.csv", rows)
+    _write(RESULTS / f"phase10_tune{tag}.csv", tune_rows)
+    _write(RESULTS / f"phase10_quality{tag}.csv", rows)
 
 
 @torch.no_grad()
@@ -214,6 +221,42 @@ def ceiling(dev: str, gen_run: str = "gen25m_s0") -> None:
                                            else f", {gen_run} samples {keep + 1}-{n_levels}"))
         rows.append(_score(name, "ceiling", temp, texts, judge.features(texts), targets, judge))
         _write(RESULTS / "phase10_ceiling.csv", rows)
+
+
+def ablation_settings(n_levels: int) -> dict[str, tuple[list[float], int | None]]:
+    """Decoding settings: per-level temperatures and top-k. Classifier-free guidance needs a
+    conditional model and extra refinement passes need a retrained generator, so neither
+    applies to the unconditional Phase 10 NCM."""
+    flat = [0.8] * n_levels
+    ramp = [round(1.0 - 0.5 * k / (n_levels - 1), 3) for k in range(n_levels)]
+    return {"T=0.8 (tuned)": (flat, None),
+            "T=0.8, top-k 20": (flat, 20),
+            "T=0.8, top-k 5": (flat, 5),
+            "T 1.0 -> 0.5 by level": (ramp, None),
+            "T=0.8, last level greedy": (flat[:-1] + [0.0], None),
+            "T=0.8, last two levels greedy": (flat[:-2] + [0.0, 0.0], None),
+            "greedy everywhere": ([0.0] * n_levels, None)}
+
+
+@torch.no_grad()
+def ablate(dev: str, run: str = "gen25m_s0") -> None:
+    bpe = load_bpe()
+    judge = Judge(dev)
+    refs = reference_texts("test", N_TEST * DRAWS, bpe)
+    targets = [judge.features(refs[d * N_TEST:(d + 1) * N_TEST]) for d in range(DRAWS)]
+    s = Sampler(run, dev)
+    rows = []
+    for name, (temps, top_k) in ablation_settings(len(s.tok.cfg.levels)).items():
+        torch.manual_seed(2)
+        texts = []
+        for i in range(0, N_TEST, BATCH):
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=dev == "cuda"):
+                _, canvases = ncm_sample(s.model, s.tok, min(BATCH, N_TEST - i), temps, top_k)
+                ids = s.tok.decode(canvases[-1]).argmax(-1)
+            texts += [decode_ids(bpe, r.tolist()) for r in ids]
+        rows.append(_score(f"{run}: {name}", "ablation", top_k, texts, judge.features(texts),
+                           targets, judge))
+        _write(RESULTS / "phase10_ablations.csv", rows)
 
 
 def _score(name: str, kind: str, temp, texts: list[str], feats: np.ndarray,
@@ -310,12 +353,16 @@ def _read(path: Path) -> list[dict]:
 
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("cmd", choices=["quality", "latency", "plot", "ceiling"])
+    p.add_argument("cmd", choices=["quality", "latency", "plot", "ceiling", "ablate"])
     p.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--repeats", type=int, default=20)
+    p.add_argument("--runs", nargs="*", default=None, help="quality: only these runs")
+    p.add_argument("--tag", default="", help="quality: suffix for the output files")
     a = p.parse_args(argv)
     if a.cmd == "quality":
-        quality(a.device)
+        quality(a.device, a.runs, a.tag)
+    elif a.cmd == "ablate":
+        ablate(a.device)
     elif a.cmd == "ceiling":
         ceiling(a.device)
     elif a.cmd == "latency":
