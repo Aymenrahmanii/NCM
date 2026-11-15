@@ -1,0 +1,6 @@
+{
+ "greedy_agreement": 1.0,
+ "loss_own_greedy_codes": 1.4346,
+ "loss_samsum": 3.1878,
+ "loss_samsum_shuffled": 3.5684
+}
