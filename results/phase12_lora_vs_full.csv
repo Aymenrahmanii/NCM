@@ -1,0 +1,5 @@
+model,arm,vs,delta_rougeL,ci_low,ci_high,within_1
+bart,lora8_qv,full,-3.24,-3.998,-2.478,False
+bart,lora16_all,full,-0.412,-0.936,0.121,True
+ncm,lora8_qv,full,-3.71,-4.281,-3.146,False
+ncm,lora16_all,full,-0.904,-1.335,-0.46,False

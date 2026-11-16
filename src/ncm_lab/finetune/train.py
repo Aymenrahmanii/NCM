@@ -240,15 +240,82 @@ def rescore() -> None:
         w.writerows(out)
 
 
+METRICS = ("rouge1", "rouge2", "rougeL", "invented_numbers", "invented_names", "repeats", "words",
+           "train_min")
+
+
+def per_example_rouge_l(model: str, arm: str, seeds: list[str], rows: list[dict]) -> np.ndarray:
+    """Each test dialogue's ROUGE-L F1 (x100), averaged over seeds."""
+    from rouge_score import rouge_scorer
+
+    sc = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
+    per_seed = []
+    for seed in seeds:
+        with open(OUT_DIR / f"{model}_{arm}_s{seed}.jsonl", encoding="utf-8") as f:
+            hyps = [json.loads(line)["hyp"] for line in f]
+        per_seed.append([100 * sc.score(r["summary"], h)["rougeL"].fmeasure
+                         for h, r in zip(hyps, rows)])
+    return np.mean(per_seed, axis=0)
+
+
+def summary() -> None:
+    """Mean and SD over seeds per (model, arm), and each LoRA arm vs full fine-tuning with a
+    paired bootstrap over the 819 test dialogues (success: a LoRA arm within 1 ROUGE-L)."""
+    from ncm_lab.stats import paired_bootstrap_mean
+
+    with open(RUNS_CSV, newline="") as f:
+        runs = [r for r in csv.DictReader(f) if r["model"] != "reference"]
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for r in runs:
+        groups.setdefault((r["model"], r["arm"]), []).append(r)
+    out = []
+    for (model, arm), rs in groups.items():
+        row = {"model": model, "arm": arm, "seeds": len(rs),
+               "trainable_m": rs[0]["trainable_m"]}
+        for k in METRICS:
+            v = [float(r[k]) for r in rs]
+            row[k] = round(statistics.fmean(v), 3)
+            row[f"{k}_sd"] = round(statistics.stdev(v), 3) if len(v) > 1 else ""
+        out.append(row)
+    test_rows = load("test")
+    gaps = []
+    for model in sorted({m for m, _ in groups}):
+        full = groups.get((model, "full"))
+        if not full:
+            continue
+        b = per_example_rouge_l(model, "full", [r["seed"] for r in full], test_rows)
+        for arm in ("lora8_qv", "lora16_all"):
+            if (model, arm) not in groups:
+                continue
+            a = per_example_rouge_l(model, arm, [r["seed"] for r in groups[(model, arm)]],
+                                    test_rows)
+            res = paired_bootstrap_mean(b, a)  # delta = arm - full
+            gaps.append({"model": model, "arm": arm, "vs": "full",
+                         "delta_rougeL": round(res.delta, 3),
+                         "ci_low": round(res.delta_ci[0], 3),
+                         "ci_high": round(res.delta_ci[1], 3),
+                         "within_1": res.delta_ci[0] > -1.0})
+            print(gaps[-1], flush=True)
+    for path, rows in ((RESULTS / "phase12_summary.csv", out),
+                       (RESULTS / "phase12_lora_vs_full.csv", gaps)):
+        with open(path, "w", newline="") as f:
+            w = csv.DictWriter(f, list(rows[0]))
+            w.writeheader()
+            w.writerows(rows)
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--model", choices=list(TASKS))
     p.add_argument("--arm", choices=ARMS)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--rescore", action="store_true", help="recompute metrics, no training")
+    p.add_argument("--summary", action="store_true", help="seed means and LoRA vs full")
     a = p.parse_args(argv)
     if a.rescore:
         rescore()
+    elif a.summary:
+        summary()
     elif a.model and a.arm:
         run(a.model, a.arm, a.seed)
     else:

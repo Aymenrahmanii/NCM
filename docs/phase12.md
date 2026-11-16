@@ -61,3 +61,55 @@ on the official checkpoint rather than falling back to the Phase 10 model.
 Cost on the RTX 3050: NCM full fine-tuning at micro-batch 8 reserved 5.0 GB and spilled
 (the 512-position prompt is always full length), so the NCM uses micro-batch 4 (3.6 GB,
 1.4 s per step of 16). About 1 h per NCM run and 25 min per BART run, 13–14 h in total.
+
+## Results (2026-11-16)
+
+All 819 test dialogues, 3 seeds per trained arm (zero-shot is deterministic, one run).
+`results/phase12_runs.csv` (per run), `results/phase12_summary.csv` (means and SDs),
+`results/phase12_lora_vs_full.csv` (paired bootstrap), outputs in `results/phase12_outputs/`.
+
+| model | arm | trainable | ROUGE-1 | ROUGE-2 | ROUGE-L (± SD) | min / run |
+|---|---|---|---|---|---|---|
+| NCM | zero-shot | – | 12.5 | 1.0 | 9.9 | – |
+| NCM | LoRA r8, query + value | 0.29M | 27.7 | 6.9 | 22.12 ± 0.14 | 69 |
+| NCM | LoRA r16, all layers | 2.4M | 31.9 | 9.0 | 24.92 ± 0.36 | 76 |
+| NCM | full | 88M | 33.0 | 9.7 | **25.83** ± 0.14 | 79 |
+| BART | zero-shot | – | 20.3 | 2.7 | 15.4 | – |
+| BART | LoRA r8, query + value | 0.44M | 44.9 | 19.5 | 36.47 ± 0.11 | 15 |
+| BART | LoRA r16, all layers | 3.2M | 48.0 | 22.6 | 39.30 ± 0.20 | 19 |
+| BART | full | 139M | 48.2 | 23.1 | **39.71** ± 0.17 | 23 |
+
+**Success criterion: a LoRA arm within 1 ROUGE-L of full fine-tuning.** Paired bootstrap over
+the 819 dialogues, each dialogue's ROUGE-L averaged over the 3 seeds:
+
+| model | LoRA arm − full | 95% CI | met? |
+|---|---|---|---|
+| BART | r16 all: −0.41 | [−0.94, +0.12] | **yes**, the whole interval is above −1 |
+| NCM | r16 all: −0.90 | [−1.34, −0.46] | on the point estimate only; the interval reaches −1.34 |
+| BART | r8 qv: −3.24 | [−4.00, −2.48] | no |
+| NCM | r8 qv: −3.71 | [−4.28, −3.15] | no |
+
+Faithfulness proxies against the dialogue (share of summaries; lenient name check, which
+flags 2.9% of the human references):
+
+| model | arm | invented number | invented name | repetition | words |
+|---|---|---|---|---|---|
+| human references | – | 1.2% | 2.9% | 14.7% | 20.0 |
+| NCM | zero-shot | 23.3% | 72.4% | 50.8% | 18.0 |
+| NCM | full | 7.1% | 36.1% | 52.6% | 18.7 |
+| BART | zero-shot | 2.9% | 53.6% | 15.8% | 16.7 |
+| BART | full | 0.4% | 3.4% | 15.7% | 17.0 |
+
+- **Adaptation works for both, and rank-16 LoRA on every projection is the cheap option:**
+  under 3% of the weights, within 0.4 (BART) to 0.9 (NCM) ROUGE-L of full fine-tuning.
+  Query-and-value LoRA at rank 8, the common default, is 3–4 points short for both.
+- **It does not close the gap between the models.** Fine-tuned, NCM stays 14 ROUGE-L behind
+  BART (25.8 vs 39.7), and the faithfulness gap barely moves: NCM still invents a name in a
+  third of its summaries (BART: 3%) and repeats itself in half (BART: at the human rate).
+  The summaries pick up the right people and topic but not the sentences ("Am's number has
+  texted Betty.. grandmother her last time."), the finest-level failure Phase 10 located.
+- **LoRA saves memory, not time, on this GPU.** NCM runs take 69–79 min whatever the arm:
+  the forward and backward pass through the frozen 512-position prompt dominates.
+- **BART is pretrained and the NCM is not**, so the model gap is not a clean method
+  comparison (as the plan noted); the adaptation question, LoRA vs full on the same starting
+  point, is clean for each model.
