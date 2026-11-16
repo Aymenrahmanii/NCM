@@ -96,16 +96,17 @@ flags 2.9% of the human references):
 |---|---|---|---|---|---|
 | human references | – | 1.2% | 2.9% | 14.7% | 20.0 |
 | NCM | zero-shot | 23.3% | 72.4% | 50.8% | 18.0 |
-| NCM | full | 7.1% | 36.1% | 52.6% | 18.7 |
+| NCM | full | 7.1% | 36.3% | 52.9% | 18.7 |
 | BART | zero-shot | 2.9% | 53.6% | 15.8% | 16.7 |
-| BART | full | 0.4% | 3.4% | 15.7% | 17.0 |
+| BART | full | 0.4% | 2.9% | 15.9% | 17.0 |
 
 - **Adaptation works for both, and rank-16 LoRA on every projection is the cheap option:**
   under 3% of the weights, within 0.4 (BART) to 0.9 (NCM) ROUGE-L of full fine-tuning.
   Query-and-value LoRA at rank 8, the common default, is 3–4 points short for both.
 - **It does not close the gap between the models.** Fine-tuned, NCM stays 14 ROUGE-L behind
   BART (25.8 vs 39.7), and the faithfulness gap barely moves: NCM still invents a name in a
-  third of its summaries (BART: 3%) and repeats itself in half (BART: at the human rate).
+  third of its summaries (BART: 2.9%, the human rate) and repeats itself in half (BART: 16%,
+  near the human 15%).
   The summaries pick up the right people and topic but not the sentences ("Am's number has
   texted Betty.. grandmother her last time."), the finest-level failure Phase 10 located.
 - **LoRA saves memory, not time, on this GPU.** NCM runs take 69–79 min whatever the arm:
