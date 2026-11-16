@@ -86,13 +86,26 @@ def test_ceiling_writes_one_row_per_setting(runs, tmp_path, monkeypatch):
     monkeypatch.setattr(ev, "N_TEST", 4)
     monkeypatch.setattr(ev, "DRAWS", 2)
     ev.ceiling("cpu", gen_run="gen_s0")
-    with open(tmp_path / "phase10_ceiling.csv", newline="") as f:
+    with open(tmp_path / "phase10_ceiling_gen_s0.csv", newline="") as f:
         out = list(csv.DictReader(f))
     # 3 levels: reconstruction, last level greedy and sampled, last two sampled, all sampled
     assert [r["run"].split(",")[0] for r in out] == [
         "real levels 1-3", "real levels 1-2", "real levels 1-2", "real levels 1-1",
         "real levels 1-0"]
     assert all(r["n"] == "4" for r in out)
+
+    # resume: a rerun skips the finished settings and recomputes only the missing ones
+    with open(tmp_path / "phase10_ceiling_gen_s0.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, list(out[0]))
+        w.writeheader()
+        w.writerows(out[:2])
+    calls = []
+    real_score = ev._score
+    monkeypatch.setattr(ev, "_score", lambda name, *a: calls.append(name) or real_score(name, *a))
+    ev.ceiling("cpu", gen_run="gen_s0")
+    with open(tmp_path / "phase10_ceiling_gen_s0.csv", newline="") as f:
+        assert [r["run"] for r in csv.DictReader(f)] == [r["run"] for r in out]
+    assert len(calls) == 3
 
 
 def test_ablation_settings_cover_every_level():

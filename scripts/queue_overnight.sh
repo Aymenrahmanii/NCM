@@ -5,7 +5,7 @@
 #   5. Phase 10 extra seeds and their evaluation
 #   nohup setsid bash scripts/queue_overnight.sh < /dev/null >> results/queue.log 2>&1 &
 # Stops at the first failure or STOP file (artifacts/scale/STOP); rerun to resume, finished
-# training runs are skipped (evaluations re-run).
+# training runs, the Phase 11 quality table and finished ceiling settings are skipped.
 set -u
 cd "$(dirname "$0")/.."
 export PYTHONPATH=src
@@ -23,7 +23,7 @@ echo "=== queue start ($(date '+%F %T')) ==="
 bash scripts/phase10_train.sh phase11 || exit 1; stopped
 bash scripts/phase10_train.sh validity || exit 1; stopped
 V2=gen25m-attn-100m-tokv2-tied_s0
-ev quality --tag _phase11 --runs gen25m-attn-100m_s0 gen25m-nocross-100m_s0 \
+[ -s results/phase10_quality_phase11.csv ] || ev quality --tag _phase11 --runs gen25m-attn-100m_s0 gen25m-nocross-100m_s0 \
   gen25m-conv-100m_s0 gen25m-linear-100m_s0 "$V2"
 ev ceiling --gen-run "$V2"
 ev ablate

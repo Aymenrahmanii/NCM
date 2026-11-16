@@ -201,10 +201,17 @@ def ceiling(dev: str, gen_run: str = "gen25m_s0") -> None:
                            .astype(np.int64))
     s = Sampler(gen_run, dev)
     n_levels = len(s.tok.cfg.levels)
-    rows = []
+    out_path = RESULTS / f"phase10_ceiling{suffix}.csv"
+    rows = _read(out_path) if out_path.exists() else []  # resume: finished settings stay
+    done = {(r["run"], str(r["temperature"])) for r in rows}
     n = n_levels
-    settings = [(n, None), (n - 1, 0.0), (n - 1, 0.8), (n - 2, 0.8), (n - 3, 0.8)]
+    settings = [(n, None), (n - 1, 0.0), (n - 1, 0.8), (n - 2, 0.8), (n - 3, 0.8),
+                (n - 5, 0.8), (n - 7, 0.8)]
     for keep, temp in [(k, t) for k, t in settings if k >= 0]:
+        name = (f"real levels 1-{keep}" + ("" if keep == n_levels
+                                           else f", {gen_run} samples {keep + 1}-{n_levels}"))
+        if (name, "" if temp is None else str(temp)) in done:
+            continue
         texts = []
         for chunk in ids.split(64):
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=dev == "cuda"):
@@ -218,10 +225,8 @@ def ceiling(dev: str, gen_run: str = "gen25m_s0") -> None:
                     canvas = canvases[-1]
                 out = s.tok.decode(canvas).argmax(-1)
             texts += [decode_ids(bpe, r.tolist()) for r in out]
-        name = (f"real levels 1-{keep}" + ("" if keep == n_levels
-                                           else f", {gen_run} samples {keep + 1}-{n_levels}"))
         rows.append(_score(name, "ceiling", temp, texts, judge.features(texts), targets, judge))
-        _write(RESULTS / f"phase10_ceiling{suffix}.csv", rows)
+        _write(out_path, rows)
 
 
 def ablation_settings(n_levels: int) -> dict[str, tuple[list[float], int | None]]:
