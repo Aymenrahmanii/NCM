@@ -19,7 +19,7 @@ that push NCM until it breaks, and a controlled scale-up on TinyStories. Every n
 reproducible from this repository.
 
 **📄 Report (PDF): [paper/ncm-limits-report.pdf](paper/ncm-limits-report.pdf)** · archived on Zenodo: [doi.org/10.5281/zenodo.23837502](https://doi.org/10.5281/zenodo.23837502)
-(version of 31 Oct 2026; the numbers below have since been re-measured on full test sets)
+(version 2, 17 Nov 2026: adds the controlled NCM vs AR comparison, attention variants and SAMSum fine-tuning)
 
 *Aymen Rahmani, final-year Data Science Engineering student. Personal learning project.*
 
