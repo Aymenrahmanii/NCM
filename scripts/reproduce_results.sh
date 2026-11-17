@@ -57,16 +57,22 @@ for stage in $STAGES; do
       python -m ncm_lab.scale.evaluate ablate
       python -m ncm_lab.scale.evaluate quality --runs gen25m_s1 gen25m_s2 ar25m_s1 ar25m_s2 --tag _seeds
       python -m ncm_lab.scale.judge items ;;  # then judge score/summary next to Ollama
-    phase11-train) bash scripts/phase10_train.sh phase11 ;;
+    phase11-train)  # mixer variants, then the validity check (official-style tokenizer)
+      bash scripts/phase10_train.sh phase11
+      bash scripts/phase10_train.sh validity ;;
     phase11)
-      python -m ncm_lab.scale.mixer_speed --device cuda
+      python -m ncm_lab.scale.mixer_speed --device cuda --repeats 20
       python -m ncm_lab.scale.mixer_speed --device cpu --repeats 5
-      python -m ncm_lab.scale.evaluate quality --tag _phase11 --runs \n        gen25m-attn-100m_s0 gen25m-nocross-100m_s0 gen25m-conv-100m_s0 gen25m-linear-100m_s0 ;;
+      python -m ncm_lab.scale.evaluate quality --tag _phase11 --runs \
+        gen25m-attn-100m_s0 gen25m-nocross-100m_s0 gen25m-conv-100m_s0 gen25m-linear-100m_s0 \
+        gen25m-attn-100m-tokv2-tied_s0
+      python -m ncm_lab.scale.evaluate ceiling --gen-run gen25m-attn-100m-tokv2-tied_s0 ;;
     phase12)  # SAMSum CSVs: hf download knkarthick/samsum --repo-type dataset --local-dir data/samsum/raw
       python scripts/phase12_gate.py
       python scripts/phase12_check_loss.py
       bash scripts/phase12_train.sh
-      python -m ncm_lab.finetune.train --rescore ;;
+      python -m ncm_lab.finetune.train --rescore
+      python -m ncm_lab.finetune.train --summary ;;
     tests) python -m pytest -q -s -m gpu ;;
     *) echo "unknown stage $stage"; exit 1 ;;
   esac

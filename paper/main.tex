@@ -58,6 +58,11 @@ long checkpoint is unreleased), NCM is 6--16$\times$ faster than compiled GPT-2 
 batch 1, but the advantage is gone by batch 8 at 512 tokens; at 128 tokens its samples are as
 diverse as an in-domain AR model's, but with 1.7$\times$ the perplexity and lower MAUVE (0.80
 vs.\ 0.95).
+Trained by us on identical TinyStories data, a 35M NCM is about 20$\times$ faster than AR
+models of 1.9--35.9M parameters but scores MAUVE 0.006 against 0.59--0.92 (three seeds at
+25M); an official-style level schedule fixes the finest level but not the coarse ones.
+Cheaper attention in the generator does not help. Rank-16 LoRA adapts the released XSum NCM to
+SAMSum within 0.9 ROUGE-L of full fine-tuning, which still trails BART by 14 points.
 All code, outputs and per-example logs are released.
 \end{abstract}
 
@@ -78,6 +83,8 @@ and increasingly use small models as tools inside retrieval-augmented generation
   \item Does NCM's speed matter inside RAG and agent pipelines driven by a 3B LLM?
   \item Where are the limits: input and output length, batch size, faithfulness, robustness,
         generalization, and comparison with a general-purpose LLM?
+  \item Trained on identical data with the same budget, does NCM beat the AR frontier, and
+        how cheaply can a released checkpoint be adapted to a new task?
 \end{enumerate}
 This is a personal learning project, not a new method: its contribution is an
 independent, fully reproducible evaluation on one commodity GPU, with predictions written

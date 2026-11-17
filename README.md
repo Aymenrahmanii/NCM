@@ -80,7 +80,8 @@ Full write-ups: [Phase 2](docs/phase2.md) · [Phase 3](docs/phase3.md) ·
 [Phase 4](docs/phase4-results.md) · [Phase 5](docs/phase5.md) · [Phase 6](docs/phase6.md) ·
 [Limits suite](docs/limits.md) · [Phase 9](docs/phase9.md) · [Phase 10](docs/phase10.md) ·
 [Phase 11](docs/phase11.md) · [Phase 12](docs/phase12.md) ·
-[Research plan and status](docs/research-plan.md)
+[Research plan and status](docs/research-plan.md) ·
+[Final report](docs/report.md) · [Blog post draft](docs/blog-post.md)
 
 ## Project phases
 
