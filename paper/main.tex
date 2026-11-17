@@ -427,7 +427,7 @@ perplexity of the AR model that matches its latency, stop scaling.
 \begin{table}[t]\centering\small
 \caption{Same data, tokenizer and budget (200M positions). Batch-1 GPU latency for one
 256-token sample; MAUVE against 5 disjoint draws of 512 real test stories ($\pm$ SD across
-draws); perplexity under GPT-2 large. Single training seed.}\label{tab:scale}
+draws); perplexity under GPT-2 large. Seed 0; three seeds of the 26.4M AR and 24.6M NCM are in the text.}\label{tab:scale}
 \begin{tabular}{lrrrrr}\toprule
 Model & Params & T & ms / sample & MAUVE $\uparrow$ & PPL $\downarrow$\\\midrule
 Human test stories & -- & -- & -- & 0.952 $\pm$ 0.015 & 7.1\\
@@ -462,9 +462,66 @@ level, with every coarser level perfect, drops MAUVE to 0.010 (0.012 greedy, per
 levels 1--6 add almost nothing on top (perplexity 181 $\to$ 212). The last level's 256 codes
 are predicted in one pass without seeing each other, so greedy decoding with perfect context
 is the best any sampling rule can do, and it is still 4$\times$ the perplexity of the 1.9M AR
-model, which is 11$\times$ slower and the closest in latency. The stop rule is met. Fixing the
-finest level needs a different design (iterative refinement, or a small AR head on the last
-level), not more scale.
+model, which is 11$\times$ slower and the closest in latency. The stop rule is met.
+
+\paragraph{Robustness.} Over three training seeds the 26.4M AR model scores MAUVE
+0.918 $\pm$ 0.027 and the 24.6M NCM 0.0059 $\pm$ 0.0002. Seven decoding settings for the NCM
+(top-$k$ 5 and 20, a temperature falling from 1.0 to 0.5 across levels, greedy on the last one
+or two levels, greedy everywhere) all stay between 0.004 and 0.007. A blind coherence rating by
+qwen2.5:3b (1--5, 200 stories per model) passes its control (human stories 4.08 vs.\ 3.17 with
+shuffled sentences) and agrees on the headline: AR models 2.54--2.82, NCM 1.37--1.62, with no
+NCM story rated 4 or 5. It is too coarse to rank the AR sizes.
+
+\paragraph{Is this a weak reimplementation?} The released 125M TinyStories NCM reaches MAUVE
+0.80 (Section~\ref{sec:long}). Our tokenizer's doubling schedule leaves half the positions to
+the last level, unlike the official one. We therefore trained a second tokenizer with an
+official-style schedule scaled to 256 positions (12 levels: 1, 16, 32, \dots, 216, 256; 4096
+codes; 12.1M parameters) and a 22.4M generator with output heads tied to the codebooks, both on
+100M positions. Its reconstruction matches human text (MAUVE 0.953) and it writes the last
+level almost perfectly given the coarser ones (0.939), against 0.010 for the original
+tokenizer. But free samples still score 0.007: quality falls to 0.57 when the generator writes
+the last three levels and to 0.04 when it writes five. The finest-level failure was partly our
+schedule; the generator's inability to write the coarse levels is not. At 25M parameters and
+100--200M positions the method, not our level schedule, is what loses to AR; whether it catches
+up at the released model's scale is open.
+
+\section{Does the generator need full attention?}\label{sec:mixers}
+With the original tokenizer and 100M positions, we replaced the generator's attention with
+per-level attention (no cross-level attention), depthwise convolutions on levels of 64
+positions or more, or block-causal linear attention. All four generators sit at the same MAUVE
+floor (0.005--0.007), so we rank them by teacher-forced loss at the finest level: full attention
+2.51 nats, per-level 2.56, linear 2.76, convolution 2.77. Only convolution is faster, and only
+on the CPU (1.5$\times$ at 1024 positions, 2.0$\times$ at 2048; 1.14$\times$ on the GPU at
+2048). At this scale attention is not what limits the NCM.
+
+\section{Adapting a released NCM: SAMSum}\label{sec:finetune}
+The official repository ships no training code, so we rebuilt the XSum NCM's training loss
+(one teacher-forced pass gives every level's logits, because each level sees only the prompt
+and itself; its argmax matches greedy generation on 100\% of codes) and fine-tuned the released
+checkpoint and \texttt{bart-base-xsum} on SAMSum dialogue summaries, 3 epochs and 3 seeds per
+arm, scoring ROUGE-L on all 819 test dialogues (Table~\ref{tab:samsum}). The frozen VQ
+tokenizer rebuilds 98.9\% of summary tokens, so it was not fine-tuned.
+
+\begin{table}[t]\centering\small
+\caption{ROUGE-L on SAMSum test (819 dialogues), mean $\pm$ SD over 3 seeds. LoRA $-$ full is
+a paired bootstrap over dialogues (95\% CI).}\label{tab:samsum}
+\begin{tabular}{lrrr}\toprule
+Arm & Trainable & NCM & BART\\\midrule
+Zero-shot & -- & 9.9 & 15.4\\
+LoRA $r$=8, query + value & 0.3--0.4M & 22.12 $\pm$ 0.14 & 36.47 $\pm$ 0.11\\
+LoRA $r$=16, all layers & 2.4--3.2M & 24.92 $\pm$ 0.36 & 39.30 $\pm$ 0.20\\
+Full fine-tuning & 88--139M & \textbf{25.83} $\pm$ 0.14 & \textbf{39.71} $\pm$ 0.17\\\midrule
+$r$=16 $-$ full & & $-$0.90 [$-$1.34, $-$0.46] & $-$0.41 [$-$0.94, +0.12]\\\bottomrule
+\end{tabular}
+\end{table}
+
+Rank-16 LoRA on every projection comes within 1 ROUGE-L of full fine-tuning with under 3\% of
+the weights: clearly for BART, on the point estimate only for the NCM. Rank 8 on query and
+value, the common default, is 3--4 points short for both. Fine-tuning does not close the gap
+between the models: the NCM stays 14 points behind BART, invents a name absent from the
+dialogue in 36\% of its summaries (BART 2.9\%, the human references 2.9\%) and repeats itself
+in 53\% (BART 16\%). BART is pretrained and the NCM is not, so the model gap is not a clean
+method comparison; LoRA vs.\ full on the same starting point is.
 
 \section{Discussion}
 On a laptop GPU with short outputs, NCM's parallel decoding buys predictable single-request
@@ -490,7 +547,7 @@ uses smaller samples. Only the ratios in Table~\ref{tab:interleaved} are interle
 have intervals; the GPU ran at 66--88\,$^\circ$C with the SM clock between 1.2 and 1.9\,GHz,
 so absolute times vary between runs. Except where marked as fp16 weights, NCM runs fp16 autocast over fp32 weights. Compiled rows compile only NCM's generator passes, not its tokenizer decoder or penalty loop. We did not re-measure the diffusion baseline behind the
 31$\times$ claim. Long-output timings above 128 tokens use random weights, and long-output
-quality is measured only at 128 tokens; the long runs use bf16 throughout. Faithfulness uses string proxies, not human judgment.
+quality is measured only at 128 tokens; the long runs use bf16 throughout. Faithfulness uses string proxies, not human judgment. The validity-check and attention-variant generators have one seed at half the main budget, and the validity check changes the schedule and the tied heads together.
 
 \section{Reproducibility}
 Code, configuration, every output and per-example log are at
