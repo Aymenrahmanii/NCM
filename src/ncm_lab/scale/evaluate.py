@@ -261,7 +261,8 @@ def ablate(dev: str, run: str = "gen25m_s0") -> None:
                 _, canvases = ncm_sample(s.model, s.tok, min(BATCH, N_TEST - i), temps, top_k)
                 ids = s.tok.decode(canvases[-1]).argmax(-1)
             texts += [decode_ids(bpe, r.tolist()) for r in ids]
-        rows.append(_score(f"{run}: {name}", "ablation", top_k, texts, judge.features(texts),
+        # the setting (temperatures, top-k) is in the name; no single temperature applies
+        rows.append(_score(f"{run}: {name}", "ablation", None, texts, judge.features(texts),
                            targets, judge))
         _write(RESULTS / f"phase10_ablations{suffix}.csv", rows)
 

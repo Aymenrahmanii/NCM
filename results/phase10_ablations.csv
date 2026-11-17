@@ -1,0 +1,8 @@
+run,kind,temperature,n,gpt2_large_ppl,mauve,mauve_sd,distinct_2,entropy,words
+gen25m_s0: T=0.8 (tuned),ablation,,512,212.35,0.0055,0.0005,0.5063,4.26,154.6
+"gen25m_s0: T=0.8, top-k 20",ablation,,512,127.22,0.0068,0.0008,0.4171,4.147,158.8
+"gen25m_s0: T=0.8, top-k 5",ablation,,512,92.16,0.0063,0.0004,0.369,4.032,155.6
+gen25m_s0: T 1.0 -> 0.5 by level,ablation,,512,110.65,0.0071,0.0017,0.3708,4.09,152.7
+"gen25m_s0: T=0.8, last level greedy",ablation,,512,117.41,0.006,0.0003,0.3681,4.047,152.4
+"gen25m_s0: T=0.8, last two levels greedy",ablation,,512,90.96,0.0058,0.0008,0.3192,4.003,149.3
+gen25m_s0: greedy everywhere,ablation,,512,48.38,0.0041,0.0,0.0017,3.892,143.0
