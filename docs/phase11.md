@@ -1,6 +1,6 @@
 # Phase 11: does the generator need full attention?
 
-> Draft written with Claude. Rewrite it in your own words.
+> Written with help from Claude (Anthropic). Every number comes from the files in `results/`.
 
 **Status: exploratory.** Phase 10's kill rule skips this phase, because the generator does not
 yet write fluent text. It ran anyway, as the question "does the generator need full

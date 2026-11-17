@@ -1,6 +1,6 @@
 # Phase 10: controlled comparison and scale-up
 
-> Draft written with Claude. Rewrite it in your own words.
+> Written with help from Claude (Anthropic). Every number comes from the files in `results/`.
 
 The plan is in `docs/research-plan.md`. This file collects results as they come in.
 

@@ -1,6 +1,6 @@
 # Phase 5: NCM inside RAG and agents
 
-> Draft written with Claude. Rewrite it in your own words.
+> Written with help from Claude (Anthropic). Every number comes from the files in `results/`.
 
 Code: `src/ncm_lab/rag/`, `src/ncm_lab/agents/`. Results: `results/phase5_*`.
 

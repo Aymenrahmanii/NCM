@@ -58,11 +58,12 @@ long checkpoint is unreleased), NCM is 6--16$\times$ faster than compiled GPT-2 
 batch 1, but the advantage is gone by batch 8 at 512 tokens; at 128 tokens its samples are as
 diverse as an in-domain AR model's, but with 1.7$\times$ the perplexity and lower MAUVE (0.80
 vs.\ 0.95).
-Trained by us on identical TinyStories data, a 35M NCM is about 20$\times$ faster than AR
-models of 1.9--35.9M parameters but scores MAUVE 0.006 against 0.59--0.92 (three seeds at
-25M); an official-style level schedule fixes the finest level but not the coarse ones.
-Cheaper attention in the generator does not help. Rank-16 LoRA adapts the released XSum NCM to
-SAMSum within 0.9 ROUGE-L of full fine-tuning, which still trails BART by 14 points.
+When we train both sides ourselves on identical TinyStories data, a 35M NCM is about
+20$\times$ faster than AR models of 1.9--35.9M parameters but scores MAUVE 0.006 against
+0.59--0.92, consistently over three seeds at 25M. An official-style level schedule repairs the
+finest level but not the coarse ones, and cheaper attention in the generator does not help.
+Finally, rank-16 LoRA adapts the released XSum NCM to SAMSum within 0.9 ROUGE-L of full
+fine-tuning, though it still trails BART by 14 points.
 All code, outputs and per-example logs are released.
 \end{abstract}
 
@@ -471,43 +472,50 @@ are predicted in one pass without seeing each other, so greedy decoding with per
 is the best any sampling rule can do, and it is still 4$\times$ the perplexity of the 1.9M AR
 model, which is 11$\times$ slower and the closest in latency. The stop rule is met.
 
-\paragraph{Robustness.} Over three training seeds the 26.4M AR model scores MAUVE
-0.918 $\pm$ 0.027 and the 24.6M NCM 0.0059 $\pm$ 0.0002. Seven decoding settings for the NCM
-(top-$k$ 5 and 20, a temperature falling from 1.0 to 0.5 across levels, greedy on the last one
-or two levels, greedy everywhere) all stay between 0.004 and 0.007. A blind coherence rating by
-qwen2.5:3b (1--5, 200 stories per model) passes its control (human stories 4.08 vs.\ 3.17 with
-shuffled sentences) and agrees on the headline: AR models 2.54--2.82, NCM 1.37--1.62, with no
-NCM story rated 4 or 5. It is too coarse to rank the AR sizes.
+\paragraph{Robustness.} The gap does not depend on the seed: over three training seeds the
+26.4M AR model scores MAUVE 0.918 $\pm$ 0.027 and the 24.6M NCM 0.0059 $\pm$ 0.0002. Nor does
+it depend on decoding. We tried top-$k$ 5 and 20, a temperature that falls from 1.0 to 0.5
+across levels, greedy decoding on the last one or two levels, and greedy decoding everywhere;
+every setting stays between 0.004 and 0.007. As a second opinion we asked qwen2.5:3b to rate
+coherence from 1 to 5, blind, on 200 stories per model. It passes its control (human stories
+4.08, the same stories with shuffled sentences 3.17) and agrees with MAUVE on the main point:
+the AR models get 2.54--2.82, the NCMs 1.37--1.62, and not one NCM story is rated 4 or 5. It is
+too coarse, however, to rank the AR models by size.
 
-\paragraph{Is this a weak reimplementation?} The released 125M TinyStories NCM reaches MAUVE
-0.80 (Section~\ref{sec:long}). Our tokenizer's doubling schedule leaves half the positions to
-the last level, unlike the official one. We therefore trained a second tokenizer with an
+\paragraph{Is this a weak reimplementation?} A result this poor deserves suspicion, since the
+released 125M TinyStories NCM reaches MAUVE 0.80 (Section~\ref{sec:long}). The most visible
+difference from the official design is our level schedule: it doubles at every level, which
+leaves half the positions to the last one. We therefore trained a second tokenizer with an
 official-style schedule scaled to 256 positions (12 levels: 1, 16, 32, \dots, 216, 256; 4096
-codes; 12.1M parameters) and a 22.4M generator with output heads tied to the codebooks, both on
-100M positions. Its reconstruction matches human text (MAUVE 0.953) and it writes the last
-level almost perfectly given the coarser ones (0.939), against 0.010 for the original
-tokenizer. But free samples still score 0.007: quality falls to 0.57 when the generator writes
-the last three levels and to 0.04 when it writes five. The finest-level failure was partly our
-schedule; the generator's inability to write the coarse levels is not. At 25M parameters and
-100--200M positions the method, not our level schedule, is what loses to AR; whether it catches
-up at the released model's scale is open.
+codes; 12.1M parameters), and a 22.4M generator whose output heads are tied to the codebooks,
+both on 100M positions. The new tokenizer's reconstructions are as good as human text (MAUVE
+0.953), and given the coarser levels the generator now writes the last one almost perfectly
+(0.939, against 0.010 with the original tokenizer). Free samples, however, still score 0.007.
+Quality drops to 0.57 when the generator has to write the last three levels and to 0.04 when it
+writes five. So the finest-level failure was partly an artefact of our schedule, but the
+generator's inability to write the coarse levels is not. At 25M parameters and 100--200M
+positions it is the method, not our level schedule, that loses to AR. Whether it catches up at
+the scale of the released model remains open.
 
 \section{Does the generator need full attention?}\label{sec:mixers}
-With the original tokenizer and 100M positions, we replaced the generator's attention with
-per-level attention (no cross-level attention), depthwise convolutions on levels of 64
-positions or more, or block-causal linear attention. All four generators sit at the same MAUVE
-floor (0.005--0.007), so we rank them by teacher-forced loss at the finest level: full attention
-2.51 nats, per-level 2.56, linear 2.76, convolution 2.77. Only convolution is faster, and only
-on the CPU (1.5$\times$ at 1024 positions, 2.0$\times$ at 2048; 1.14$\times$ on the GPU at
-2048). At this scale attention is not what limits the NCM.
+Keeping the original tokenizer and a 100M-position budget, we swapped the generator's
+attention for three cheaper alternatives: attention within each level only (no cross-level
+attention), depthwise convolutions on the levels of 64 positions or more, and block-causal
+linear attention. All four generators end up on the same MAUVE floor (0.005--0.007), so MAUVE
+cannot separate them; teacher-forced loss at the finest level can. Full attention is best at
+2.51 nats, followed by per-level attention (2.56), linear attention (2.76) and convolution
+(2.77). Only convolution is faster, and mainly on the CPU: 1.5$\times$ at 1024 positions and
+2.0$\times$ at 2048, against 1.14$\times$ on the GPU at 2048. At this scale, attention is not
+what holds the NCM back.
 
 \section{Adapting a released NCM: SAMSum}\label{sec:finetune}
-The official repository ships no training code, so we rebuilt the XSum NCM's training loss
-(one teacher-forced pass gives every level's logits, because each level sees only the prompt
-and itself; its argmax matches greedy generation on 100\% of codes) and fine-tuned the released
-checkpoint and \texttt{bart-base-xsum} on SAMSum dialogue summaries, 3 epochs and 3 seeds per
-arm, scoring ROUGE-L on all 819 test dialogues (Table~\ref{tab:samsum}). The frozen VQ
-tokenizer rebuilds 98.9\% of summary tokens, so it was not fine-tuned.
+The official repository ships inference code only, so we first rebuilt the XSum NCM's
+training loss. Because each level attends only to the prompt and to itself, a single
+teacher-forced pass yields every level's logits, and its argmax matches greedy generation on
+100\% of codes. We then fine-tuned the released checkpoint and \texttt{bart-base-xsum} on SAMSum
+dialogue summaries for 3 epochs, with 3 seeds per arm, and scored ROUGE-L on all 819 test
+dialogues (Table~\ref{tab:samsum}). The frozen VQ tokenizer already rebuilds 98.9\% of summary
+tokens, so we left it frozen.
 
 \begin{table}[t]\centering\small
 \caption{ROUGE-L on SAMSum test (819 dialogues), mean $\pm$ SD over 3 seeds. LoRA $-$ full is
@@ -522,13 +530,14 @@ $r$=16 $-$ full & & $-$0.90 [$-$1.34, $-$0.46] & $-$0.41 [$-$0.94, +0.12]\\\bott
 \end{tabular}
 \end{table}
 
-Rank-16 LoRA on every projection comes within 1 ROUGE-L of full fine-tuning with under 3\% of
-the weights: clearly for BART, on the point estimate only for the NCM. Rank 8 on query and
-value, the common default, is 3--4 points short for both. Fine-tuning does not close the gap
-between the models: the NCM stays 14 points behind BART, invents a name absent from the
-dialogue in 36\% of its summaries (BART 2.9\%, the human references 2.9\%) and repeats itself
-in 53\% (BART 16\%). BART is pretrained and the NCM is not, so the model gap is not a clean
-method comparison; LoRA vs.\ full on the same starting point is.
+Rank-16 LoRA on every projection, training under 3\% of the weights, comes within 1 ROUGE-L of
+full fine-tuning. For BART the whole confidence interval clears that bar; for the NCM only the
+point estimate does. The common default, rank 8 on query and value, falls 3--4 points short for
+both models. Fine-tuning does not close the gap between them, though. The NCM stays 14 points
+behind BART, invents a name that is not in the dialogue in 36\% of its summaries (BART and the
+human references: 2.9\%), and repeats itself in 53\% (BART: 16\%). Since BART is pretrained and
+the NCM is not, the gap between the models is not a clean comparison of methods; the comparison
+of LoRA with full fine-tuning from the same starting point is.
 
 \section{Discussion}
 On a laptop GPU with short outputs, NCM's parallel decoding buys predictable single-request
