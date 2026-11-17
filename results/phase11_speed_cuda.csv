@@ -1,0 +1,13 @@
+device,length,mixer,median_ms,peak_mib,repeats
+cuda,256,attn,57.79,499.2,20
+cuda,256,nocross,63.31,499.2,20
+cuda,256,conv,74.93,502.8,20
+cuda,256,linear,193.52,530.8,20
+cuda,1024,attn,85.72,610.2,20
+cuda,1024,nocross,87.6,610.2,20
+cuda,1024,conv,102.59,611.8,20
+cuda,1024,linear,278.86,733.1,20
+cuda,2048,attn,148.18,915.9,20
+cuda,2048,nocross,153.65,915.9,20
+cuda,2048,conv,129.61,883.5,20
+cuda,2048,linear,336.75,1128.9,20

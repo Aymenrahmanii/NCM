@@ -1,0 +1,13 @@
+device,length,mixer,median_ms,peak_mib,repeats
+cpu,256,attn,242.86,nan,5
+cpu,256,nocross,249.02,nan,5
+cpu,256,conv,227.15,nan,5
+cpu,256,linear,4619.4,nan,5
+cpu,1024,attn,956.57,nan,5
+cpu,1024,nocross,941.35,nan,5
+cpu,1024,conv,631.44,nan,5
+cpu,1024,linear,23991.48,nan,5
+cpu,2048,attn,2359.55,nan,5
+cpu,2048,nocross,2403.02,nan,5
+cpu,2048,conv,1152.84,nan,5
+cpu,2048,linear,39683.77,nan,5
