@@ -189,6 +189,8 @@ The first k levels are kept and gen25m samples the rest (`results/phase10_ceilin
 - **The last level is.** With every coarser level perfect, generating only the 256-code
   level drops MAUVE from 0.86 to 0.01. Levels 1–6 add almost nothing on top
   (ppl 181 → 212). This confirms, at 35M parameters and 200M tokens, the diagnostic above.
+  It holds for this tokenizer's doubling schedule; the validity check below shows that an
+  official-style schedule fixes the last level and moves the failure to the coarse ones.
 - **Greedy is the ceiling for decoding.** The 256 last-level codes are predicted in one
   pass and never see each other, so with oracle context the best a sampling rule can do is
   pick each code's argmax: perplexity 61. Temperature per level, top-k or guidance change
@@ -201,10 +203,117 @@ above 3× the perplexity of the AR model that matches its latency. No AR model i
 the closest, ar2m (1.9M, 694 ms, 11× slower), has perplexity 15.3. NCM's best is 212 with
 real sampling and 61 even with an oracle for levels 1–8, so ≥ 4× under the most generous
 reading. **Verdict: stop.** Phase 11 (cheaper attention for a generator that does not yet
-write fluent text) is skipped; next is Phase 12.
+write fluent text) was skipped by this rule; it later ran as an exploratory study
+(`docs/phase11.md`).
 
 The honest claim from Phase 10 is the plan's third outcome: *a smaller AR model is both
-faster and more fluent; NCM's speed costs quality at this scale.* Making the finest level
-work would need a different design (e.g. iterative refinement or a small AR head on the
-last level), which is new research rather than this plan. Extra seeds are not run: the gap
-is 100× on MAUVE, far beyond seed noise (MAUVE sd ≤ 0.05 across draws).
+faster and more fluent; NCM's speed costs quality at this scale.* The extras below (seeds,
+decoding, a second judge) confirm it; the validity check revises *where* the quality is lost.
+
+## Extras (2026-11-16 to 17)
+
+### Three seeds (`results/phase10_quality_seeds.csv`)
+
+Seeds 1 and 2 of gen25m and ar25m, same budget and tuning as seed 0:
+
+| model | seed 0 | seed 1 | seed 2 | mean ± SD |
+|---|---|---|---|---|
+| ar25m | 0.887 | 0.931 | 0.935 | **0.918** ± 0.027 |
+| NCM gen25m | 0.0060 | 0.0057 | 0.0061 | **0.0059** ± 0.0002 |
+
+Seed 0 was ar25m's weakest seed, so the gap in the main table is, if anything, understated.
+
+### Decoding ablations (`python -m ncm_lab.scale.evaluate ablate`)
+
+Seven decoding settings for gen25m seed 0, 512 test samples each
+(`results/phase10_ablations.csv`):
+
+| setting | MAUVE ↑ | GPT-2-L ppl | distinct-2 |
+|---|---|---|---|
+| T = 0.8 (the tuned setting) | 0.0055 | 212 | 0.51 |
+| T = 0.8, top-k 20 | 0.0068 | 127 | 0.42 |
+| T = 0.8, top-k 5 | 0.0063 | 92 | 0.37 |
+| T from 1.0 (level 1) down to 0.5 (level 9) | **0.0071** | 111 | 0.37 |
+| T = 0.8, last level greedy | 0.0060 | 117 | 0.37 |
+| T = 0.8, last two levels greedy | 0.0058 | 91 | 0.32 |
+| greedy everywhere | 0.0041 | 48 | 0.002 (collapse) |
+
+Narrower sampling trades diversity for perplexity, but no setting moves MAUVE off the floor.
+Classifier-free guidance and extra refinement passes need a conditional or retrained
+generator, so they are not in the list.
+
+### A second judge: qwen2.5:3b (`python -m ncm_lab.scale.judge`)
+
+A blind LLM coherence rating (1–5, temperature 0) on 200 test samples per model, 200 human
+stories outside the MAUVE draws, and the same 200 with their sentences shuffled. Items are
+shuffled and carry only an id (`results/phase10_judge.csv`, every reply parsed):
+
+| group | mean (± SD) | rated 4 or 5 |
+|---|---|---|
+| human | **4.08** ± 0.71 | 79% |
+| human, sentences shuffled | 3.17 ± 0.44 | 17% |
+| ar25m / ar35m | 2.82 / 2.80 | 11% / 12% |
+| ar2m / ar7m / ar3m | 2.73 / 2.70 / 2.54 | 4% / 4% / 1% |
+| NCM gen25m / gen12m | 1.62 / 1.37 | 0% / 0% |
+
+- The control passes: real stories score clearly above shuffled ones.
+- The judge agrees with MAUVE on the main result: no NCM story gets a 4 or 5, and NCM is a
+  point below even the 1.9M AR model.
+- It is too coarse for anything finer. It barely separates the AR sizes (2.54–2.82, where
+  MAUVE spreads 0.59–0.92) and rates shuffled human stories above every model, so it rewards
+  well-formed sentences more than story order. A 3B judge is a check on the headline, not a
+  replacement for MAUVE.
+
+## Validity check: is this a weak reimplementation? (2026-11-16)
+
+The released 125M TinyStories NCM reaches MAUVE 0.80 (Phase 9); ours gets 0.006. The largest
+design difference is the level schedule: ours doubles (1, 2, 4, …, 256), so the last level
+writes half the positions, while the official one grows by roughly equal steps. To test
+whether that, rather than the method, explains Phase 10, a second tokenizer and generator
+follow the official design scaled to 256 positions:
+
+- **tokv2:** levels 1, 16, 32, 48, 64, 80, 104, 128, 152, 184, 216, 256 (12 levels), 4096 codes
+  per level, 12.1M parameters, 100M positions.
+- **Generator:** gen25m width and depth with output heads tied to the codebooks (logits from
+  the distance to each code), 22.4M parameters, 100M positions. Compare it with
+  `gen25m-attn-100m_s0` from Phase 11, the old tokenizer at the same budget.
+
+Token accuracy of tokv2 when decoding from the first k levels (end of training):
+
+| levels used | 3 | 5 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|
+| finest length | 32 | 64 | 104 | 128 | 152 | 184 | 216 | 256 |
+| accuracy | 19.7% | 47.0% | 75.4% | 85.5% | 92.9% | 96.6% | 98.5% | **99.97%** |
+
+At half the length it already rebuilds 85.5% of tokens, against 58.3% for the Phase 10
+tokenizer, so the last levels now refine text instead of writing it.
+
+Result (`results/phase10_quality_phase11.csv`): **MAUVE 0.0067** (ppl 130), against 0.0051 for
+the old tokenizer at the same budget. Where it is lost
+(`results/phase10_ceiling_gen25m-attn-100m-tokv2-tied_s0.csv`):
+
+| levels kept real | generated | T | MAUVE ↑ | GPT-2-L ppl ↓ |
+|---|---|---|---|---|
+| 1–12 (reconstruction) | none | – | **0.953** | 7.4 |
+| 1–11 | 12 | greedy | 0.939 | 8.5 |
+| 1–11 | 12 | 0.8 | 0.939 | 8.9 |
+| 1–10 | 11–12 | 0.8 | 0.903 | 12.5 |
+| 1–9 | 10–12 | 0.8 | 0.569 | 21.2 |
+| 1–7 | 8–12 | 0.8 | 0.039 | 53.3 |
+| 1–5 | 6–12 | 0.8 | 0.011 | 105 |
+| none | 1–12 | 0.6 | 0.007 | 130 |
+
+- **The finest-level failure above was partly our schedule.** With the official-style
+  schedule the generator writes the last level at near-human quality (0.94, against 0.01 for
+  the old tokenizer) and the reconstruction itself matches human text (0.953 vs 0.952).
+- **But the stories are still broken.** The failure moves to the coarse and middle levels:
+  quality halves when the generator writes 3 levels and is gone by 5. The generator can
+  refine a plan it is given; it cannot produce one.
+- **So the Phase 10 verdict stands, with a narrower reason.** The low score is not an
+  artefact of our level schedule, and not of decoding (above). At 25M parameters and
+  100–200M positions, the NCM generator does not learn the coarse levels well enough. The
+  official 125M model's 0.80 suggests scale is what is missing; this study cannot say
+  whether NCM catches up with AR at matched scale.
+
+Caveats: one seed and half budget for the v2 generator; tied heads and the new schedule
+change together, so their separate effects are not identified.
