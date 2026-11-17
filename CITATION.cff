@@ -26,3 +26,28 @@ preferred-citation:
   doi: 10.5281/zenodo.23837502
   url: "https://doi.org/10.5281/zenodo.23837502"
   year: 2026
+references:
+  - type: article
+    title: "Next-Concept Modeling: Fast, Parallel Coarse-to-Fine Text Generation"
+    authors:
+      - family-names: Kumbong
+        given-names: Hermann
+      - family-names: Khare
+        given-names: Ishan S.
+      - family-names: Mlauzi
+        given-names: Iddah
+      - family-names: Woen
+        given-names: Andrew
+      - family-names: Ding
+        given-names: Charles
+      - family-names: Buchanan
+        given-names: E. Kelly
+      - family-names: Arora
+        given-names: Simran
+      - family-names: Mirhoseini
+        given-names: Azalia
+      - family-names: Ré
+        given-names: Christopher
+    year: 2026
+    url: "https://arxiv.org/abs/2610.14162"
+    repository-code: "https://github.com/HazyResearch/ncm"
